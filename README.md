@@ -1,7 +1,11 @@
 1. interprete python
 
-    winget install -e --id Python.Python.3.11
+    winget install -e --id Python.Python.3.12
 
-2. installazione client redis su python
+2. creazione virtual environment
+
+    TODO
+
+3. installazione client redis su python
 
     pip install redis
