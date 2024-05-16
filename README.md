@@ -1,11 +1,49 @@
-1. interprete python
+# Impostazione ambiente virtuale: venv
 
+## 1. installazione interprete python
+
+Se non è già installato, scarica Python 3.12. Se è già installato, assicurati che sia la versione attiva nel sistema di python.
+Comandi per scaricare e installare Python 3.12:
+### Windows:
+```bash
     winget install -e --id Python.Python.3.12
+```
 
-2. creazione virtual environment
+### macOS (homebrew)
+```bash
+    brew install python@3.12
+```
 
-    TODO
+## 2. Creazione virtual environment
 
-3. installazione client redis su python
+Apri una shell nella cartella in cui vuoi eseguire il progetto ed esegui il comando:
+### Windows
+```bash
+    python -m venv NOME_ENVIRONMENT
+``` 
 
-    pip install redis
+### macOS
+``` bash
+    python3 -m venv myenv
+``` 
+
+## 3. Attivazione virtual environment
+### Windows Powershell
+``` bash
+    {path_directory_venv_progetto}\Scripts\Activate.ps1
+``` 
+### macOS
+``` bash
+    source {path_directory_venv_progetto}/bin/activate
+``` 
+
+# Clonazione della repo di GitHub
+``` bash
+    git clone https://github.com/GhislandiGiulio/progetto_redis.git
+``` 
+
+# Installazione delle dipendenze
+Installazione moduli richiesti per eseguire lo script python:
+``` bash
+    pip install requirements.txt
+```
