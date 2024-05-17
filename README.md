@@ -46,7 +46,7 @@ Comandi per scaricare e installare Python 3.12:
 # Installazione delle dipendenze
 Installazione moduli richiesti per eseguire lo script python:
 ``` bash
-    pip install requirements.txt
+    pip install -r requirements.txt
 ```
 # Installazione di Redis server con Docker
 Se non già installato, scarica l'eseguibile di Docker dal [sito ufficiale](https://www.docker.com/products/docker-desktop/).
