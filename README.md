@@ -56,7 +56,7 @@ Una volta installato, fai il pull dell'imagine di Redis:
 ```
 Adesso crea un container con port-forwarding:
 ``` bash
-    docker run --name NOME_CONTAINER -p 6379:6379 redis -d 
+    docker run -d --name NOME_CONTAINER -p 6379:6379 redis 
 ```
 
 ## Ora puoi eseguire il progetto! 
