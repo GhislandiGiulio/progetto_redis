@@ -1,3 +1,10 @@
+
+Apri una shell nella cartella in cui vuoi eseguire il progetto ed esegui i seguenti comandi:
+# Clonazione della repo di GitHub
+``` bash
+    git clone https://github.com/GhislandiGiulio/progetto_redis.git .
+``` 
+
 # Impostazione ambiente virtuale: venv
 
 ## 1. installazione interprete python
@@ -16,7 +23,6 @@ Comandi per scaricare e installare Python 3.12:
 
 ## 2. Creazione virtual environment
 
-Apri una shell nella cartella in cui vuoi eseguire il progetto ed esegui il comando:
 ### Windows
 ```bash
     python -m venv NOME_ENVIRONMENT
@@ -35,11 +41,6 @@ Apri una shell nella cartella in cui vuoi eseguire il progetto ed esegui il coma
 ### macOS
 ``` bash
     source {path_directory_venv_progetto}/bin/activate
-``` 
-
-# Clonazione della repo di GitHub
-``` bash
-    git clone https://github.com/GhislandiGiulio/progetto_redis.git .
 ``` 
 
 # Installazione delle dipendenze
