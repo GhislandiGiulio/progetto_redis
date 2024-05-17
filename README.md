@@ -47,3 +47,15 @@ Installazione moduli richiesti per eseguire lo script python:
 ``` bash
     pip install requirements.txt
 ```
+# Installazione di Redis server con Docker
+Se non già installato, scarica l'eseguibile di Docker dal [sito ufficiale](https://www.docker.com/products/docker-desktop/).
+Una volta installato, fai il pull dell'imagine di Redis:
+``` bash
+    docker pull redis 
+```
+Adesso crea un container con port-forwarding:
+``` bash
+    docker run --name NOME_CONTAINER -p 6379:6379 redis -d 
+```
+
+## Ora puoi eseguire il progetto! 
