@@ -39,7 +39,7 @@ Apri una shell nella cartella in cui vuoi eseguire il progetto ed esegui il coma
 
 # Clonazione della repo di GitHub
 ``` bash
-    git clone https://github.com/GhislandiGiulio/progetto_redis.git
+    git clone https://github.com/GhislandiGiulio/progetto_redis.git .
 ``` 
 
 # Installazione delle dipendenze
