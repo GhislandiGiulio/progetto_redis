@@ -49,7 +49,7 @@ Scegli un'opzione:
         case 2:
             user = login(r)
         case 3:
-            user = logout(r)
+            user = logout(user)
             # return True ## fate sapere se secondo voi dopo il logout dovrebbe anche uscire dal programma o no?
         case 4:
             return True
