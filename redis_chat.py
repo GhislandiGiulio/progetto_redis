@@ -2,6 +2,8 @@ import redis
 import os
 import json
 from uuid import uuid1
+import time
+from datetime import datetime
 
 ## wrapper per le differenti schermate
 def schermata(funzione):
@@ -175,19 +177,35 @@ def logout(user: str|None):
 
 @schermata
 def aggiungi_contatto(r: redis.Redis, user):
+    # TODO: sistemare logica output True o False
+    # TODO: sistemare il fatto che un utente puo mandare la richiesta a se stesso
+    # TODO: l'algoritmo di corrispondenze non dovrebbe considerare gli utenti che abbiamo gia come amici
+    # TODO: aggiungere opzione di uscire alla prima schermata
+    
     def set_contatto(contatto):
-        ## crea l'amicizia e la chat privata
+        ## crea nuova chat privata
+        chat_id = str(uuid1())
+        r.set(f'chat:{chat_id}', f'["{contatto}", "{user}"]')
+        
+        ## crea l'amicizia e salva i dati di chat e nomi utenti
         amici = json.loads(r.hget(f"user:{user}", "friends"))
         amici.append(contatto)
         
         chats = json.loads(r.hget(f"user:{user}", "chats"))
-        chat_id = str(uuid1())
         chats.append(chat_id)
         r.hset(f"user:{user}", "friends", json.dumps(amici) )
         r.hset(f"user:{user}", "chats", json.dumps(chats) )
-        r.set(f'chat:{chat_id}", f"["{contatto}"]')
         
-        print(f"Aggiunto {contatto} come amico, mandagli un saluto in chat (tra poco)")
+        contatto_amici = json.loads(r.hget(f"user:{contatto}", "friends"))
+        contatto_amici.append(user)
+        
+        contatto_chats = json.loads(r.hget(f"user:{contatto}", "chats"))
+        contatto_chats.append(chat_id)
+        
+        r.hset(f"user:{contatto}", "friends", json.dumps(contatto_amici) )
+        r.hset(f"user:{contatto}", "chats", json.dumps(chats) )
+        
+        print(f"Aggiunto {contatto} come amico, mandagli un saluto in chat (tra molto poco)")
     
     @schermata
     def ricerca(r: redis.Redis, user: str):
@@ -225,14 +243,63 @@ def aggiungi_contatto(r: redis.Redis, user):
 
 @schermata
 def menu_chat(r: redis.Redis, user: str):
-    chats_ids = json.loads(r.hget(f"user:{user}", "chats"))
-    for i, chat_id in enumerate(chats_ids):
-        ## da sistemare
-        chat = json.loads(r.get(f"chat:{chat_id}"))
-        print(f'{i}. {chat[0] if len(chat) == 1 else chat.join(", ") }')
-
-    input('\n: ')
     
+    @schermata
+    def seleziona_chat() -> str:
+        '''Ritorna l'id della chat che vogliamo ispezionare'''
+        chats_ids = json.loads(r.hget(f"user:{user}", "chats"))
+        for i, chat_id in enumerate(chats_ids):
+            ## da sistemare
+            chat = json.loads(r.get(f"chat:{chat_id}"))
+            componenti = [e for e in chat if e != user]
+            print(f'{i+1}. {", ".join(componenti) }')
+
+        scelta = input('\n: ')
+        try:
+            scelta = int(scelta)
+            if scelta < 1 or scelta > len(chats_ids):
+                raise ValueError
+            return chats_ids[scelta-1]
+        except ValueError:
+            return False
+    
+    while True:
+        chat_id = seleziona_chat()
+        if chat_id: break
+        
+    if r.exists(f'chat:{chat_id}:messages'): 
+        ## ottiene i messaggi inviati nell'ultimo giorno
+        messaggi = r.zrange(f'chat:{chat_id}:messages', 0, -1)
+        
+        for messaggio in messaggi:
+            messaggio = json.loads(messaggio)
+            data_messaggio = datetime.fromtimestamp(float(messaggio['date']))
+            utente_messaggio = messaggio['from'] if messaggio['from'] != user else 'Io'
+            print(f"{data_messaggio} {utente_messaggio}: {messaggio['message']}")
+        
+    else:
+        ## la chat è vuota
+        print('Ops, sembra che la vostra conversazione non sia ancora iniziata, manda un saluto!')
+    
+    messaggio = input('Scrivi ("q" per uscire): ')
+    
+    if messaggio.lower() == 'q':
+        return
+    
+    ## aggiunta del messagio chat
+    t = time.time()
+    r.zadd(
+            f'chat:{chat_id}:messages', 
+            
+            {
+                json.dumps({
+                    "message": messaggio,
+                    "date": str(t),
+                    "from": user 
+                }): 0
+            }
+        )
+        
     
 if __name__ == "__main__":
     ## inizializzazione utente logged-in. Si potrebbe aggiungere una cache per memorizzarlo anche se si esce dall'esecuzione.
