@@ -7,13 +7,17 @@ from datetime import datetime
 
 ## wrapper per le differenti schermate
 def schermata(funzione):
+
     def wrapper(*args, **kwargs):
+
         if os.name == 'nt':
             ## Per Windows
             os.system('cls')
         else:
             ## Per Unix/Linux/macOS
             os.system('clear')
+
+        print("Se vuoi tornare indietro in qualunque momento, inserisci 'q'")
 
         return funzione(*args, **kwargs)
 
@@ -24,42 +28,44 @@ def menu_iniziale(r: redis.Redis, user: str) -> bool|str|None:
     '''Ritorna True se l'utente vuole uscire dal programma
 Ritorna False se l'utente ha sbagliato la scelta o è uscito da una funzione
 Ritorna None o str in tutti gli altri casi, è il valore dell'utente attivo aggiornato.'''
-    print("Benvenuto", user if user != None else "anonimo")
-    
-    try:
-        print("""
-Scegli un'opzione:
-1. Registrazione
-2. Login 
-3. Logout
-4. Esci dal programma""")
-        if user != None:
-            print('''5. Chat
-6. Aggiungi un contatto
-''')
-        scelta = int(input(': '))
-        if scelta < 1 or scelta > 6:
-            raise ValueError
-    except ValueError:
-        return False
 
+    # stampa del nome utente dell'utente loggato
+    print("Utente: ", user if user != None else "guest")
+    
+    # Stampa delle opzioni del menu
+    print("""
+    Scegli un'opzione:
+    1. Registrazione
+    2. Login 
+    3. Logout""")
+    if user != None:
+        print(
+'''    4. Chat
+    5. Aggiungi un contatto''')
+    print(
+"""    q. Esci dal programma""")
+
+    # inserimento della scelta da tastiera
+    scelta = input(': ')
+
+    # controllo sulla scelta
     match scelta:
-        case 1:
+        case "1":
             user = registrazione(r)
-        case 2:
+        case "2":
             user = login(r)
-        case 3:
+        case "3":
             user = logout(user)
-            # return True ## fate sapere se secondo voi dopo il logout dovrebbe anche uscire dal programma o no?
-        case 4:
-            return True
-        case 5:
-            ## TODO: implementare la chat
+        case "4":
             menu_chat(r, user)
             pass
-        case 6:
+        case "5":
             aggiungi_contatto(r, user)
-    
+        case "q":
+            return True
+        case _:
+            return False
+        
     return user
 
 @schermata
@@ -143,7 +149,6 @@ def registrazione(r: redis.Redis):
 
 @schermata
 def login(r: redis.Redis):
-    print("Se vuoi uscire in qualunque momento, inserisci 'q'")
 
     ## inserimento del nome utente
     nome_utente = input("Inserisci il tuo nome utente: ")
@@ -210,6 +215,10 @@ def aggiungi_contatto(r: redis.Redis, user):
     @schermata
     def ricerca(r: redis.Redis, user: str):
         contatto = input('Inserisci il nome utente del contatto che desidere aggiungere\n: ')
+
+        if contatto == "q":
+            return False
+
         utenti = r.hkeys('users')
         
         corrispondenze = []
@@ -223,7 +232,6 @@ def aggiungi_contatto(r: redis.Redis, user):
         
         for i, utente in enumerate(corrispondenze):
             print(f"{i+1}. {utente}")
-        print('q. Quit')
         
         opzione = input('\nInserisci l\'indice dell\'utente da aggiungere\n: ')
         if opzione.lower() == 'q':
@@ -292,10 +300,10 @@ def menu_chat(r: redis.Redis, user: str):
         messaggi = []
         messaggi = print_chat(messaggi)
         
-        messaggio = input('\nScrivi ("q" per uscire): ')
+        messaggio = input('\n> ')
         
-        if messaggio.lower() == 'q' or len(messaggio) == 0:
-            break ## esci dal loop
+        if messaggio == 'q':
+            break
         
         ## aggiunta del messagio chat
         t = time.time()
@@ -317,7 +325,7 @@ if __name__ == "__main__":
     user = None
     r = redis.Redis(
         host="localhost",
-        port=8765,
+        port=6379,
         db=0,
         decode_responses=True
     )
