@@ -172,13 +172,12 @@ def login(r: redis.Redis):
 
 @schermata
 def logout(user: str|None):
-    if user != None:
-        decisione = input("Sei sicuro di voler effettuare il logout?\ny=Sì\nn=No\n")
+    decisione = input("Sei sicuro di voler effettuare il logout?\ny=Sì\nn=No\n\n: ")
 
-        if decisione == "y":
-            return None
-        else:
-            return user
+    if decisione.lower() in ["y", "yes"]:
+        return None
+    else:
+        return user
 
 @schermata
 def aggiungi_contatto(r: redis.Redis, user):
