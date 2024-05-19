@@ -31,13 +31,12 @@ Ritorna None o str in tutti gli altri casi, è il valore dell'utente attivo aggi
 Scegli un'opzione:
 1. Registrazione
 2. Login 
-3. Logout
-4. Esci dal programma""")
+3. Esci dal programma""")
         if user != None:
-            print('''5. Chat
-6. Aggiungi un contatto
-''')
-        scelta = int(input(': '))
+            print('''4. Chat
+5. Aggiungi un contatto
+6. Logout''')
+        scelta = int(input('\n: '))
         if scelta < 1 or scelta > 6:
             raise ValueError
     except ValueError:
@@ -49,17 +48,14 @@ Scegli un'opzione:
         case 2:
             user = login(r)
         case 3:
-            user = logout(user)
-            # return True ## fate sapere se secondo voi dopo il logout dovrebbe anche uscire dal programma o no?
-        case 4:
             return True
-        case 5:
-            ## TODO: implementare la chat
+        case 4:
             menu_chat(r, user)
-            pass
-        case 6:
+        case 5:
             aggiungi_contatto(r, user)
-    
+        case 6:
+            user = logout(user)
+
     return user
 
 @schermata
@@ -167,13 +163,12 @@ def login(r: redis.Redis):
 
 @schermata
 def logout(user: str|None):
-    if user != None:
-        decisione = input("Sei sicuro di voler effettuare il logout?\ny=Sì\nn=No\n\n: ")
+    decisione = input("Sei sicuro di voler effettuare il logout?\ny=Sì\nn=No\n\n: ")
 
-        if decisione.lower() in ["y", "yes"]:
-            return None
-        else:
-            return user
+    if decisione.lower() in ["y", "yes"]:
+        return None
+    else:
+        return user
 
 @schermata
 def aggiungi_contatto(r: redis.Redis, user):
