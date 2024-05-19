@@ -1,6 +1,6 @@
 import redis
 import os
-
+import json
 
 ## wrapper per le differenti schermate
 def schermata(funzione):
@@ -24,7 +24,19 @@ Ritorna None o str in tutti gli altri casi, è il valore dell'utente attivo aggi
     print("Benvenuto", user if user != None else "anonimo")
     
     try:
-        scelta = int(input("\n:Scegli un'opzione:\n1- Registrazione \n2- Login \n3- Logout\n4- Chat\n5- Esci dal programma\n"))
+        print("""
+Scegli un'opzione:
+1. Registrazione
+2. Login 
+3. Logout
+4. Esci dal programma""")
+        if user != None:
+            print('''5. Chat
+6. Aggiungi un contatto
+''')
+        scelta = int(input(': '))
+        if scelta < 1 or scelta > 6:
+            raise ValueError
     except ValueError:
         return False
 
@@ -37,12 +49,13 @@ Ritorna None o str in tutti gli altri casi, è il valore dell'utente attivo aggi
             user = logout(r)
             # return True ## fate sapere se secondo voi dopo il logout dovrebbe anche uscire dal programma o no?
         case 4:
-            ## TODO: implementare la chat
-            pass
-        case 5:
             return True
-        case _:
-            return False
+        case 5:
+            ## TODO: implementare la chat
+            # menu_chat(r, user)
+            pass
+        case 6:
+            aggiungi_contatto(r, user)
     
     return user
 
@@ -116,7 +129,11 @@ def registrazione(r: redis.Redis):
     
     ## aggiunta delle chiavi all'hashmap Redis
     r.hset("users", nome_utente, password)
-    r.hset("phone_number", numero_telefono, nome_utente)
+    r.hset(f"user:{nome_utente}", mapping={
+        "password": password,
+        "phone_number": numero_telefono,
+        "friends": "[]"
+    })
 
     return nome_utente
 
@@ -139,9 +156,9 @@ def login(r: redis.Redis):
         return False
     
     ## verifica della correttezza della password / esistenza dell'utente inserito
-    output = r.hget("users", nome_utente)
+    actual_password = r.hget("users", nome_utente)
 
-    if output == password and output != None :
+    if actual_password == password and actual_password != None :
         return nome_utente
 
 @schermata
@@ -154,6 +171,50 @@ def logout(user: str|None):
         else:
             return user
 
+@schermata
+def aggiungi_contatto(r: redis.Redis, user):
+    # @schermata
+    def ricerca(r: redis.Redis, user: str):
+        contatto = input('Inserisci il nome utente del contatto che desidere aggiungere\n: ')
+        utenti = r.hkeys('users')
+        
+        corrispondenze = []
+        for utente in utenti:
+            if utente in contatto or contatto in utente:
+                corrispondenze.append(utente)
+                
+            if utente == contatto:
+                amici = json.loads(r.hget(f"user:{user}", "friends"))
+                amici.append(contatto)
+                r.hset(f"user:{user}", "friends", json.dumps(amici) )
+                print(f"Aggiunto {contatto} come amico")
+                
+                return True
+        
+        for i, utente in enumerate(corrispondenze):
+            print(f"{i+1}. {utente}")
+        print('q. Quit')
+        
+        opzione = input('\nInserisci l\'indice dell\'utente da aggiungere\n: ')
+        if opzione.lower() == 'q':
+            return True
+    
+        try: 
+            opzione = int(opzione)
+            contatto = corrispondenze[opzione-1]
+        except:
+            return False
+        
+        amici = json.loads(r.hget(f"user:{user}", "friends"))
+        amici.append(contatto)
+        r.hset(f"user:{user}", "friends", json.dumps(amici) )
+        print(f"Aggiunto {contatto} come amico")
+                
+        return True
+        
+        
+    while True:
+        if ricerca(r, user): break
 
 if __name__ == "__main__":
     ## inizializzazione utente logged-in. Si potrebbe aggiungere una cache per memorizzarlo anche se si esce dall'esecuzione.
@@ -167,6 +228,8 @@ if __name__ == "__main__":
 
     while True:
         output = menu_iniziale(r, user)
+        input(output)
+
         if type(output) in [str, type(None)]:
             user = output
             continue
