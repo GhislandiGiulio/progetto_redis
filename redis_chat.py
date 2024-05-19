@@ -1,6 +1,7 @@
 import redis
 import os
 import json
+from uuid import uuid1
 
 ## wrapper per le differenti schermate
 def schermata(funzione):
@@ -52,7 +53,7 @@ Scegli un'opzione:
             return True
         case 5:
             ## TODO: implementare la chat
-            # menu_chat(r, user)
+            menu_chat(r, user)
             pass
         case 6:
             aggiungi_contatto(r, user)
@@ -132,7 +133,8 @@ def registrazione(r: redis.Redis):
     r.hset(f"user:{nome_utente}", mapping={
         "password": password,
         "phone_number": numero_telefono,
-        "friends": "[]"
+        "friends": "[]",
+        "chats": "[]"
     })
 
     return nome_utente
@@ -173,7 +175,21 @@ def logout(user: str|None):
 
 @schermata
 def aggiungi_contatto(r: redis.Redis, user):
-    # @schermata
+    def set_contatto(contatto):
+        ## crea l'amicizia e la chat privata
+        amici = json.loads(r.hget(f"user:{user}", "friends"))
+        amici.append(contatto)
+        
+        chats = json.loads(r.hget(f"user:{user}", "chats"))
+        chat_id = str(uuid1())
+        chats.append(chat_id)
+        r.hset(f"user:{user}", "friends", json.dumps(amici) )
+        r.hset(f"user:{user}", "chats", json.dumps(chats) )
+        r.set(f'chat:{chat_id}", f"["{contatto}"]')
+        
+        print(f"Aggiunto {contatto} come amico, mandagli un saluto in chat (tra poco)")
+    
+    @schermata
     def ricerca(r: redis.Redis, user: str):
         contatto = input('Inserisci il nome utente del contatto che desidere aggiungere\n: ')
         utenti = r.hkeys('users')
@@ -184,11 +200,7 @@ def aggiungi_contatto(r: redis.Redis, user):
                 corrispondenze.append(utente)
                 
             if utente == contatto:
-                amici = json.loads(r.hget(f"user:{user}", "friends"))
-                amici.append(contatto)
-                r.hset(f"user:{user}", "friends", json.dumps(amici) )
-                print(f"Aggiunto {contatto} come amico")
-                
+                set_contatto(contatto)
                 return True
         
         for i, utente in enumerate(corrispondenze):
@@ -205,17 +217,23 @@ def aggiungi_contatto(r: redis.Redis, user):
         except:
             return False
         
-        amici = json.loads(r.hget(f"user:{user}", "friends"))
-        amici.append(contatto)
-        r.hset(f"user:{user}", "friends", json.dumps(amici) )
-        print(f"Aggiunto {contatto} come amico")
-                
+        set_contatto(contatto)
         return True
-        
         
     while True:
         if ricerca(r, user): break
 
+@schermata
+def menu_chat(r: redis.Redis, user: str):
+    chats_ids = json.loads(r.hget(f"user:{user}", "chats"))
+    for i, chat_id in enumerate(chats_ids):
+        ## da sistemare
+        chat = json.loads(r.get(f"chat:{chat_id}"))
+        print(f'{i}. {chat[0] if len(chat) == 1 else chat.join(", ") }')
+
+    input('\n: ')
+    
+    
 if __name__ == "__main__":
     ## inizializzazione utente logged-in. Si potrebbe aggiungere una cache per memorizzarlo anche se si esce dall'esecuzione.
     user = None
@@ -228,7 +246,6 @@ if __name__ == "__main__":
 
     while True:
         output = menu_iniziale(r, user)
-        input(output)
 
         if type(output) in [str, type(None)]:
             user = output
