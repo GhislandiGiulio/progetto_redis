@@ -266,40 +266,51 @@ def menu_chat(r: redis.Redis, user: str):
     while True:
         chat_id = seleziona_chat()
         if chat_id: break
-        
-    if r.exists(f'chat:{chat_id}:messages'): 
-        ## ottiene i messaggi inviati nell'ultimo giorno
-        messaggi = r.zrange(f'chat:{chat_id}:messages', 0, -1)
-        
-        for messaggio in messaggi:
-            messaggio = json.loads(messaggio)
-            data_messaggio = datetime.fromtimestamp(float(messaggio['date']))
-            utente_messaggio = messaggio['from'] if messaggio['from'] != user else 'Io'
-            print(f"{data_messaggio} {utente_messaggio}: {messaggio['message']}")
-        
-    else:
-        ## la chat è vuota
-        print('Ops, sembra che la vostra conversazione non sia ancora iniziata, manda un saluto!')
     
-    messaggio = input('Scrivi ("q" per uscire): ')
-    
-    if messaggio.lower() == 'q':
-        return
-    
-    ## aggiunta del messagio chat
-    t = time.time()
-    r.zadd(
-            f'chat:{chat_id}:messages', 
+    @schermata
+    def print_chat(messaggi):
+        if r.exists(f'chat:{chat_id}:messages'): 
+            ## ottiene i messaggi inviati nell'ultimo giorno
+            messaggi_della_chat = r.zrange(f'chat:{chat_id}:messages', 0, -1)
             
-            {
-                json.dumps({
-                    "message": messaggio,
-                    "date": str(t),
-                    "from": user 
-                }): 0
-            }
-        )
+            for messaggio in messaggi_della_chat:
+                messaggio = json.loads(messaggio)
+                data_messaggio = ":".join(str(datetime.fromtimestamp(float(messaggio['date']))).split(':')[:-1])
+                utente_messaggio = messaggio['from'] if messaggio['from'] != user else 'Io'
+                messaggi.append(f"{data_messaggio} {utente_messaggio}: {messaggio['message']}")
+            
+        else:
+            ## la chat è vuota
+            messaggi.append('Ops, sembra che la vostra conversazione non sia ancora iniziata, manda un saluto!')
+            
+        for messaggio in messaggi:
+            print(messaggio)
         
+        return messaggi
+    
+    while True:
+        messaggi = []
+        messaggi = print_chat(messaggi)
+        
+        messaggio = input('\nScrivi ("q" per uscire): ')
+        
+        if messaggio.lower() == 'q' or len(messaggio) == 0:
+            break ## esci dal loop
+        
+        ## aggiunta del messagio chat
+        t = time.time()
+        r.zadd(
+                f'chat:{chat_id}:messages', 
+                
+                {
+                    json.dumps({
+                        "message": messaggio,
+                        "date": str(t),
+                        "from": user 
+                    }): t
+                }
+            )
+            
     
 if __name__ == "__main__":
     ## inizializzazione utente logged-in. Si potrebbe aggiungere una cache per memorizzarlo anche se si esce dall'esecuzione.
