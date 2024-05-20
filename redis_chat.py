@@ -41,7 +41,7 @@ def menu_iniziale():
         case "4":
             ...
         case "5":
-            ...
+            contatti()
         case "q":
             exit(0)
         case _:
@@ -155,6 +155,81 @@ def logout():
 
         if decisione == "y":
             active_user = None
+
+def aggiungi_contatto():
+    global active_user
+
+    # inserimento da tastiera del nome da ricercare
+    nome_utente_ricercato = input("Inserisci il nome utente del contatto da aggiungere: ")
+
+    # scannerizzo la stringa inserita dall'utente
+    _, keys = r.hscan("users", cursor=0, match=f'{nome_utente_ricercato}*', count = 10)
+
+    # calcolo numero di risultati
+    numero_risultati = len(keys)
+
+    # azioni in base ai risultati
+    match numero_risultati:
+
+        # caso in cui non ci sono risultati
+        case 0:
+            print("Nessun risultato trovato")
+            input("Premi 'invio' per continuare...")
+            return
+
+        # caso in cui c'è solo un risultato
+        case 1:
+            output = r.sadd(f"{active_user}:contatti", nome_utente_ricercato)
+
+        # caso in cui ci sono più risultati
+        case _:
+            print("Scegli uno dei risultati:")
+            risultati_contati = list(enumerate(keys.items()))
+
+            # stampa dei risultati
+            [print(i+1, key) for i, (key,_) in risultati_contati]
+
+            # while per far scegliere all'utente il risultato senza errori
+            while True:
+                try:
+                    i = int(input(": ")) - 1
+
+                    if i < 0 or i >= len(risultati_contati):
+                        print("Scelta non valida, riprova.")
+                        continue
+
+                    key, _ = risultati_contati[i][1]  # Estrai la chiave dalla lista
+                    output = r.sadd(f"{active_user}:contatti", key)
+
+                    nome_utente_ricercato = key
+                    break
+
+                except ValueError:
+                    print("Numero non valido.")
+
+    # stampa in base all'output del'add di redis
+    if output == 0:
+        print(f"L'utente {nome_utente_ricercato} è già nei contatti.")
+    if output == 1:
+        print(f"Utente {nome_utente_ricercato} aggiunto ai contatti.")
+
+    input("Premi 'invio' per continuare...")
+
+@schermata
+def contatti():
+    global active_user
+    if active_user == None:
+        return
+
+    scelta = input("Scegli un'opzione: \n1- Aggiungi contatto \n2- Elimina contatto\n3- Visualizza contatti\nq- Torna al menù\n:")
+
+    match scelta:
+        case "q":
+            return
+        case "1":
+            aggiungi_contatto()
+        case "2":
+            ...
 
 
 if __name__ == "__main__":
