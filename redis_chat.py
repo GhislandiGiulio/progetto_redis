@@ -133,8 +133,19 @@ q- Esci dal programma""")
         date = ":".join(str(datetime.fromtimestamp(t)).split(':')[:-1])
         
         nuovo_messaggio =  date + ' ' + self.active_user + ': ' + nuovo_messaggio
-        self.r.zadd(f'chat:{chat_id}:messaggi', {nuovo_messaggio:time.time()})
-        self.chat(chat_id)
+
+        
+        ## controllo della modalità non disturbare
+        componenti = self.r.smembers(f'chat:{chat_id}')
+        amico = [e for e in componenti if e != self.active_user][0]
+        non_disturbare = self.r.get(f'user:{amico}:non_disturbare')
+        
+        if non_disturbare == 'on':
+            print('\nLa persona con cui stai provando a comunicare ha la modalità non disturbare attiva!')
+            input('Premi invio per continuare...')
+        else:    
+            self.r.zadd(f'chat:{chat_id}:messaggi', {nuovo_messaggio:time.time()})
+            self.chat(chat_id)
 
     @schermata
     def registrazione(self):
