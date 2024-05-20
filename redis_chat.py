@@ -23,12 +23,14 @@ class Manager:
             db=0,
             decode_responses=True
         )
-        self.active_user = True
+        self.active_user = None
     
 
     @schermata
     def menu_iniziale(self):
         print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
+        print()
+        
         print("""Scegli un'opzione:
 1- Registrazione 
 2- Login 
@@ -58,6 +60,8 @@ q- Esci dal programma""")
     @schermata
     def registrazione(self):
         print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
+        print()
+        
         print("Se vuoi uscire in qualunque momento, inserisci 'q'")
 
         # ciclo pe rinserimento del numero di telefono
@@ -131,6 +135,8 @@ q- Esci dal programma""")
     @schermata
     def login(self):
         print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
+        print()
+        
         print("Se vuoi uscire in qualunque momento, inserisci 'q'")
 
         # inserimento del nome utente
@@ -155,18 +161,19 @@ q- Esci dal programma""")
 
     @schermata
     def logout(self):
-        print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
+        print("Utente attivo:", self.active_user if self.active_user != None else "guest")
+        print()
 
         if self.active_user != None:
 
-            decisione = input("Sei sicuro di voler effettuare il logout?\ny=Sì\nn=No\n")
+            decisione = input("\nSei sicuro di voler effettuare il logout?\ny=Sì\nn=No\n")
 
             if decisione == "y":
                 self.active_user = None
         
 
     def aggiungi_contatto(self):
-        print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
+        # print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
 
         # inserimento da tastiera del nome da ricercare
         nome_utente_ricercato = input("Inserisci il nome utente del contatto da aggiungere: ")
@@ -192,7 +199,7 @@ q- Esci dal programma""")
             # caso in cui c'è solo un risultato
             case 1:
                 key, _ = risultati_contati[0][1]  # Estrai la chiave dalla lista
-                output = self.r.sadd(f"{active_user}:contatti", key)
+                output = self.r.sadd(f"user:{self.active_user}:contatti", key)
                 nome_utente_ricercato = key
 
             # caso in cui ci sono più risultati
@@ -212,7 +219,7 @@ q- Esci dal programma""")
                             continue
 
                         key, _ = risultati_contati[i][1]  # Estrai la chiave dalla lista
-                        output = self.r.sadd(f"{active_user}:contatti", key)
+                        output = self.r.sadd(f"user:{self.active_user}:contatti", key)
 
                         nome_utente_ricercato = key
                         break
@@ -231,6 +238,8 @@ q- Esci dal programma""")
     @schermata
     def contatti(self):
         print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
+        print()
+        
         if self.active_user == None:
             return
 
@@ -242,11 +251,12 @@ q- Esci dal programma""")
             case "1":
                 self.aggiungi_contatto()
             case "2":
-                ...
+                # self.rimuovi_contatto()
+                pass
 
 if __name__ == "__main__":
     manager = Manager()   
     
     while True:
-        active_user = manager.menu_iniziale()
+        manager.menu_iniziale()
     
