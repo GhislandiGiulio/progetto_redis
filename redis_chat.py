@@ -236,6 +236,28 @@ q- Esci dal programma""")
         input("Premi 'invio' per continuare...")
 
     @schermata
+    def rimuovi_contatto(self):
+        print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
+        print()
+
+        amicizie = self.r.smembers(f"user:{self.active_user}:contatti")
+        for i, amico in enumerate(amicizie):
+            print(f'{i+1}. {amico}')
+        
+        scelta = input(': ')
+        
+        try:
+            scelta = int(scelta)
+            if scelta < 1 or scelta > len(amicizie):
+                raise ValueError
+        except ValueError:
+            print('Scelta non valida')
+            return
+
+        nome_utente = list(amicizie)[scelta - 1]
+        self.r.srem(f"user:{self.active_user}:contatti", nome_utente)
+        
+    @schermata
     def contatti(self):
         print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
         print()
@@ -251,8 +273,8 @@ q- Esci dal programma""")
             case "1":
                 self.aggiungi_contatto()
             case "2":
-                # self.rimuovi_contatto()
-                pass
+                self.rimuovi_contatto()
+                # pass
 
 if __name__ == "__main__":
     manager = Manager()   
