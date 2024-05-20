@@ -55,7 +55,8 @@ q- Esci dal programma""")
             case "q":
                 exit(0)
             case _:
-                pass
+                print('\nScelta non valida,')
+                input('Premi invio per continuare.')
 
     @schermata
     def registrazione(self):
@@ -166,14 +167,16 @@ q- Esci dal programma""")
 
         if self.active_user != None:
 
-            decisione = input("\nSei sicuro di voler effettuare il logout?\ny=Sì\nn=No\n")
+            decisione = input("Sei sicuro di voler effettuare il logout?\ny=Sì\nn=No\n\n: ")
 
             if decisione == "y":
                 self.active_user = None
         
 
+    @schermata
     def aggiungi_contatto(self):
-        # print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
+        print("Utente attivo:", self.active_user if self.active_user != None else "guest")
+        print()
 
         # inserimento da tastiera del nome da ricercare
         nome_utente_ricercato = input("Inserisci il nome utente del contatto da aggiungere: ")
@@ -192,7 +195,7 @@ q- Esci dal programma""")
 
             # caso in cui non ci sono risultati
             case 0:
-                print("Nessun risultato trovato")
+                print("\nNessun risultato trovato")
                 input("Premi 'invio' per continuare...")
                 return
 
@@ -204,7 +207,7 @@ q- Esci dal programma""")
 
             # caso in cui ci sono più risultati
             case _:
-                print("Scegli uno dei risultati:")
+                print("\nScegli uno dei risultati:")
 
                 # stampa dei risultati
                 [print(i+1, key) for i, (key,_) in risultati_contati]
@@ -212,7 +215,7 @@ q- Esci dal programma""")
                 # while per far scegliere all'utente il risultato senza errori
                 while True:
                     try:
-                        i = int(input(": ")) - 1
+                        i = int(input("\n: ")) - 1
 
                         if i < 0 or i >= len(risultati_contati):
                             print("Scelta non valida, riprova.")
@@ -229,9 +232,9 @@ q- Esci dal programma""")
 
         # stampa in base all'output del'add di redis
         if output == 0:
-            print(f"L'utente {nome_utente_ricercato} è già nei contatti.")
+            print(f"\nL'utente {nome_utente_ricercato} è già nei contatti.")
         if output == 1:
-            print(f"Utente {nome_utente_ricercato} aggiunto ai contatti.")
+            print(f"\nUtente {nome_utente_ricercato} aggiunto ai contatti.")
 
         input("Premi 'invio' per continuare...")
 
@@ -241,21 +244,34 @@ q- Esci dal programma""")
         print()
 
         amicizie = self.r.smembers(f"user:{self.active_user}:contatti")
+        if not amicizie:
+            print("Non hai contatti.")
+            input("Premi invio per continuare...")
+            return
+        
+        print(f"I tuoi contatti sono:")
         for i, amico in enumerate(amicizie):
             print(f'{i+1}. {amico}')
+        print('q. Esci')
         
-        scelta = input(': ')
+        scelta = input('\nDigita l\'indice del contatto da eliminare: ')
+        if scelta.lower() == 'q':
+            return
         
         try:
             scelta = int(scelta)
             if scelta < 1 or scelta > len(amicizie):
                 raise ValueError
         except ValueError:
-            print('Scelta non valida')
+            print('\nScelta non valida')
+            input('Premi invio per continuare...')
             return
 
         nome_utente = list(amicizie)[scelta - 1]
         self.r.srem(f"user:{self.active_user}:contatti", nome_utente)
+        
+        print('Contatto rimosso con successo,')
+        input('Premi invio per continuare...')
         
     @schermata
     def contatti(self):
@@ -265,7 +281,12 @@ q- Esci dal programma""")
         if self.active_user == None:
             return
 
-        scelta = input("Scegli un'opzione: \n1- Aggiungi contatto \n2- Elimina contatto\n3- Visualizza contatti\nq- Torna al menù\n:")
+        print('''Scegli un'opzione: 
+1- Aggiungi contatto 
+2- Elimina contatto
+3- Visualizza contatti
+q- Torna al menù''')
+        scelta = input("\n:")
 
         match scelta:
             case "q":
@@ -276,9 +297,12 @@ q- Esci dal programma""")
                 self.rimuovi_contatto()
             case "3":
                 contatti = self.r.smembers(f"user:{self.active_user}:contatti")
-                print(f"\nI tuoi contatti sono:")
-                for i, contatto in enumerate(contatti):
-                    print(f'{i+1}. {contatto}')
+                if not contatti:
+                    print("\nNon hai contatti.")
+                else:
+                    print(f"\nI tuoi contatti sono:")
+                    for i, contatto in enumerate(contatti):
+                        print(f'{i+1}. {contatto}')
                 
                 input("\nPremi 'invio' per continuare...")
 
