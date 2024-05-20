@@ -5,16 +5,16 @@ from uuid import uuid1
 import time
 from datetime import datetime
 
-## wrapper per le differenti schermate
+# wrapper per le differenti schermate
 def schermata(funzione):
 
     def wrapper(*args, **kwargs):
 
         if os.name == 'nt':
-            ## Per Windows
+            # Per Windows
             os.system('cls')
         else:
-            ## Per Unix/Linux/macOS
+            # Per Unix/Linux/macOS
             os.system('clear')
 
         print("Se vuoi tornare indietro in qualunque momento, inserisci 'q'")
@@ -73,21 +73,21 @@ def registrazione(r: redis.Redis):
 
     print("Se vuoi uscire in qualunque momento, inserisci 'q'")
 
-    ## ciclo pe rinserimento del numero di telefono
+    # ciclo per inserimento del numero di telefono
     while True:
         nome_utente = input("Inserisci il tuo nuovo nome utente: ")
 
-        ## verifica se l'utente vuole uscire
+        # verifica se l'utente vuole uscire
         if nome_utente == "q":
             return False
 
-        ## verifica sulla lunghezza minima e massima del nome utente
+        # verifica sulla lunghezza minima e massima del nome utente
         lunghezza_nomeutente = len(nome_utente)
         if lunghezza_nomeutente < 3 or lunghezza_nomeutente > 20:
             print("Il nome utente deve avere una lunghezza compresa tra 3 e 20 (compresi)")
             continue
 
-        ## verifica dell'esistenza pregressa del nome utente
+        # verifica dell'esistenza pregressa del nome utente
         output = r.hget("users", nome_utente)
         if output == None:
             break
@@ -95,48 +95,48 @@ def registrazione(r: redis.Redis):
         print("Nome utente già inserito.")
 
     
-    ## ciclo per inserimento corretto del numero di telefono
+    # ciclo per inserimento corretto del numero di telefono
     while True:
-        ## ciclo per verifica della formattazione del numero di telefono    
+        # ciclo per verifica della formattazione del numero di telefono    
         while True:
             numero_telefono = input("Inserisci il tuo numero di telefono: +")
             
-            ## verifica se l'utente vuole uscire
+            # verifica se l'utente vuole uscire
             if numero_telefono == "q":
                 return False
 
-            ## rimozione degli spazi
+            # rimozione degli spazi
             numero_telefono = numero_telefono.replace(" ", "")
 
             try:
-                ## verifica della lunghezza del numero
+                # verifica della lunghezza del numero
                 lunghezza_numero = len(numero_telefono)
                 if lunghezza_numero < 12 or lunghezza_numero > 13:
                     print("Il numero di telefono deve avere 12/13 cifre (incluso il prefisso).")
                     continue 
 
-                ## tentativo di casting a numero intero per verifica presenza caratteri non numerici
+                # tentativo di casting a numero intero per verifica presenza caratteri non numerici
                 numero_telefono = int(numero_telefono)
                 break
             
             except ValueError:
                 print("Il numero di telefono contiene simboli oltre ai numeri.")
 
-        ## verifica dell'esistenza pregressa del numero di telefono
+        # verifica dell'esistenza pregressa del numero di telefono
         output = r.hget("phone_number", numero_telefono)
         if output == None:
             break
 
         print("Numero già registrato.")
     
-    ## input della password
+    # input della password
     password = input("Inserisci la tua nuova password: ")
     
-    ## verifica se l'utente vuole uscire
+    # verifica se l'utente vuole uscire
     if password == "q":
         return False
     
-    ## aggiunta delle chiavi all'hashmap Redis
+    # aggiunta delle chiavi all'hashmap Redis
     r.hset("users", nome_utente, password)
     r.hset(f"user:{nome_utente}", mapping={
         "password": password,
@@ -150,21 +150,21 @@ def registrazione(r: redis.Redis):
 @schermata
 def login(r: redis.Redis):
 
-    ## inserimento del nome utente
+    # inserimento del nome utente
     nome_utente = input("Inserisci il tuo nome utente: ")
 
-    ## esci se l'utente inserisce "q"
+    # esci se l'utente inserisce "q"
     if nome_utente == "q":
         return False
 
-    ## inserimento della password
+    # inserimento della password
     password = input("Inserisci la password: ")
 
-    ## esci se l'utente inserisce "q"
+    # esci se l'utente inserisce "q"
     if password == "q":
         return False
     
-    ## verifica della correttezza della password / esistenza dell'utente inserito
+    # verifica della correttezza della password / esistenza dell'utente inserito
     actual_password = r.hget("users", nome_utente)
 
     if actual_password == password and actual_password != None :
@@ -187,11 +187,11 @@ def aggiungi_contatto(r: redis.Redis, user):
     # TODO: aggiungere opzione di uscire alla prima schermata
     
     def set_contatto(contatto):
-        ## crea nuova chat privata
+        # crea nuova chat privata
         chat_id = str(uuid1())
         r.set(f'chat:{chat_id}', f'["{contatto}", "{user}"]')
         
-        ## crea l'amicizia e salva i dati di chat e nomi utenti
+        # crea l'amicizia e salva i dati di chat e nomi utenti
         amici = json.loads(r.hget(f"user:{user}", "friends"))
         amici.append(contatto)
         
@@ -200,13 +200,13 @@ def aggiungi_contatto(r: redis.Redis, user):
         r.hset(f"user:{user}", "friends", json.dumps(amici) )
         r.hset(f"user:{user}", "chats", json.dumps(chats) )
         
-        contatto_amici = json.loads(r.hget(f"user:{contatto}", "friends"))
-        contatto_amici.append(user)
+        amici_contatto = json.loads(r.hget(f"user:{contatto}", "friends"))
+        amici_contatto.append(user)
         
         contatto_chats = json.loads(r.hget(f"user:{contatto}", "chats"))
         contatto_chats.append(chat_id)
         
-        r.hset(f"user:{contatto}", "friends", json.dumps(contatto_amici) )
+        r.hset(f"user:{contatto}", "friends", json.dumps(amici_contatto) )
         r.hset(f"user:{contatto}", "chats", json.dumps(chats) )
         
         print(f"Aggiunto {contatto} come amico, mandagli un saluto in chat (tra molto poco)")
@@ -233,7 +233,8 @@ def aggiungi_contatto(r: redis.Redis, user):
             print(f"{i+1}. {utente}")
         
         opzione = input('\nInserisci l\'indice dell\'utente da aggiungere\n: ')
-        if opzione.lower() == 'q':
+
+        if opzione == 'q':
             return True
     
         try: 
@@ -256,7 +257,7 @@ def menu_chat(r: redis.Redis, user: str):
         '''Ritorna l'id della chat che vogliamo ispezionare'''
         chats_ids = json.loads(r.hget(f"user:{user}", "chats"))
         for i, chat_id in enumerate(chats_ids):
-            ## da sistemare
+            # da sistemare
             chat = json.loads(r.get(f"chat:{chat_id}"))
             componenti = [e for e in chat if e != user]
             print(f'{i+1}. {", ".join(componenti) }')
@@ -277,7 +278,7 @@ def menu_chat(r: redis.Redis, user: str):
     @schermata
     def print_chat(messaggi):
         if r.exists(f'chat:{chat_id}:messages'): 
-            ## ottiene i messaggi inviati nell'ultimo giorno
+            # ottiene i messaggi inviati nell'ultimo giorno
             messaggi_della_chat = r.zrange(f'chat:{chat_id}:messages', 0, -1)
             
             for messaggio in messaggi_della_chat:
@@ -287,7 +288,7 @@ def menu_chat(r: redis.Redis, user: str):
                 messaggi.append(f"{data_messaggio} {utente_messaggio}: {messaggio['message']}")
             
         else:
-            ## la chat è vuota
+            # la chat è vuota
             messaggi.append('Ops, sembra che la vostra conversazione non sia ancora iniziata, manda un saluto!')
             
         for messaggio in messaggi:
@@ -304,7 +305,7 @@ def menu_chat(r: redis.Redis, user: str):
         if messaggio == 'q':
             break
         
-        ## aggiunta del messagio chat
+        # aggiunta del messagio chat
         t = time.time()
         r.zadd(
                 f'chat:{chat_id}:messages', 
@@ -320,7 +321,7 @@ def menu_chat(r: redis.Redis, user: str):
             
     
 if __name__ == "__main__":
-    ## inizializzazione utente logged-in. Si potrebbe aggiungere una cache per memorizzarlo anche se si esce dall'esecuzione.
+    # inizializzazione utente logged-in. Si potrebbe aggiungere una cache per memorizzarlo anche se si esce dall'esecuzione.
     user = None
     r = redis.Redis(
         host="localhost",
