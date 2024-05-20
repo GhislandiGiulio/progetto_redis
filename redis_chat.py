@@ -274,7 +274,13 @@ q- Esci dal programma""")
                 self.aggiungi_contatto()
             case "2":
                 self.rimuovi_contatto()
-                # pass
+            case "3":
+                contatti = self.r.smembers(f"user:{self.active_user}:contatti")
+                print(f"\nI tuoi contatti sono:")
+                for i, contatto in enumerate(contatti):
+                    print(f'{i+1}. {contatto}')
+                
+                input("\nPremi 'invio' per continuare...")
 
 if __name__ == "__main__":
     manager = Manager()   
