@@ -1,6 +1,7 @@
 import redis
 import os
 from datetime import datetime
+from database import Database
 import time
 
 # wrapper per le differenti schermate
@@ -17,16 +18,11 @@ def schermata(funzione):
 
 class Manager:
     def __init__(
-        self
+        self,
+        porta: str
     ):
-        self.r = redis.Redis(
-            host="localhost",
-            port=8765,
-            db=0,
-            decode_responses=True
-        )
+        self.db = Database(porta)
         self.active_user = None
-    
 
     @schermata
     def menu_iniziale(self):
@@ -72,21 +68,21 @@ class Manager:
         print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
         print()
             
-        modalita = self.r.get(f'user:{self.active_user}:non_disturbare')
+        modalita = self.db.get_non_disturbare(self.active_user)
         if modalita == None or modalita == 'off':
             print("Modalità non disturbare disattivata")
 
             decisione = input("Vuoi attivare la modalità? (y/n)\n:")
 
             if decisione == "y":
-                self.r.set(f'user:{self.active_user}:non_disturbare', 'on')
+                self.db.set_non_disturbare(self.active_user, 'on')
         else:
             print("Modalità non disturbare attiva")
 
             decisione = input("Vuoi disattivare la modalità? (y/n)\n:")
 
             if decisione == "y":
-                self.r.set(f'user:{self.active_user}:non_disturbare', 'off')
+                self.db.set_non_disturbare(self.active_user, 'off')
 
         input('\nPremi invio per continuare...')
 
@@ -95,13 +91,9 @@ class Manager:
         print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
         print()
         print("Se vuoi uscire in qualunque momento, inserisci 'q'")
-
-        
-        chat_ids = self.r.smembers(f'user:{self.active_user}:chats')
-        
-        for i, chat_id in enumerate(chat_ids):
-            componenti = self.r.smembers(f'chat:{chat_id}')
-            print(f'{i+1}- Chat con {", ".join([e for e in componenti if e != self.active_user])}')
+        contatti = self.db.get_contatti(self.active_user)
+        for i, utente in enumerate(contatti):
+            print(f"{i}. chat con {utente}")
         
         scelta = input("\nInserisci l'indice della chat da aprire: ")
 
@@ -110,22 +102,21 @@ class Manager:
         
         try:
             scelta = int(scelta)
-            if scelta < 1 or scelta > len(chat_ids):
+            if scelta < 1 or scelta > len(contatti):
                 raise ValueError
         except ValueError:
             print('\nRisposta errata,')
             input('Premere invio per continuare...')
             return
         
-        chat_id = list(chat_ids)[scelta-1]
-        print(chat_id)
-        self.chat(chat_id)
+        contatto = list(contatti)[scelta-1]
+        self.chat(contatto)
     
     @schermata
-    def chat(self, chat_id):
+    def chat(self, contatto):
         # TODO: quando scriviamo a qualcuno se abbiamo la modalità non disturbare attiva dovremmo disattivarla
         
-        messaggi = self.r.zrange(f'chat:{chat_id}:messaggi', 0, -1)
+        messaggi = self.db.get_conversazione(self.active_user, contatto)
         
         if not messaggi: 
             print('Sembra che al momento non siano presenti messaggi, manda un saluto al tuo contatto!')
@@ -139,9 +130,7 @@ class Manager:
             return
 
         ## controllo della modalità non disturbare
-        componenti = self.r.smembers(f'chat:{chat_id}')
-        amico = [e for e in componenti if e != self.active_user][0]
-        non_disturbare = self.r.get(f'user:{amico}:non_disturbare')
+        non_disturbare = self.db.get_non_disturbare(contatto)
         
         if non_disturbare == 'on':
             print('\nLa persona con cui stai provando a comunicare ha la modalità non disturbare attiva!')
@@ -151,8 +140,8 @@ class Manager:
             date = ":".join(str(datetime.fromtimestamp(t)).split(':')[:-1])
             
             nuovo_messaggio =  date + ' ' + self.active_user + ': ' + nuovo_messaggio
-            self.r.zadd(f'chat:{chat_id}:messaggi', {nuovo_messaggio:time.time()})
-            self.chat(chat_id)
+            self.db.add_conversazione(self.active_user, contatto, nuovo_messaggio, t)
+            self.chat(contatto)
 
     @schermata
     def registrazione(self):
@@ -176,7 +165,7 @@ class Manager:
                 continue
 
             # verifica dell'esistenza pregressa del nome utente
-            output = self.r.hget("users", nome_utente)
+            output = self.db.get_utente(nome_utente)
             if output == None:
                 break
             
@@ -209,7 +198,7 @@ class Manager:
                     print("Il numero di telefono contiene simboli oltre ai numeri.")
 
             # verifica dell'esistenza pregressa del numero di telefono
-            output = self.r.hget("phone_number", numero_telefono)
+            output = self.db.get_numero_telefono(numero_telefono)
             if output == None:
                 break
 
@@ -224,9 +213,7 @@ class Manager:
             return
         
         # aggiunta delle chiavi all'hashmap Redis
-        self.r.hset("users", nome_utente, password)
-        self.r.hset("phone_number", numero_telefono, nome_utente)
-
+        self.db.registra_utente(nome_utente, password, numero_telefono)
         self.active_user = nome_utente
 
     @schermata
@@ -251,7 +238,7 @@ class Manager:
             return
         
         # verifica della correttezza della password / esistenza dell'utente inserito
-        output = self.r.hget("users", nome_utente)
+        output = self.db.get_utente(nome_utente)
 
         if output == password and output != None :
             self.active_user = nome_utente
@@ -279,7 +266,7 @@ class Manager:
         nome_utente_ricercato = input("Inserisci il nome utente del contatto da aggiungere: ")
 
         # scannerizzo la stringa inserita dall'utente
-        _, keys = self.r.hscan("users", cursor=0, match=f'{nome_utente_ricercato}*', count = 10)
+        keys = self.db.get_utenti(nome_utente_ricercato)
 
         # calcolo numero di risultati
         numero_risultati = len(keys)
@@ -298,7 +285,7 @@ class Manager:
             # caso in cui c'è solo un risultato
             case 1:
                 key, _ = risultati_contati[0][1]  # Estrai la chiave dalla lista
-                output = self.r.sadd(f"user:{self.active_user}:contatti", key)
+                output = self.db.set_contatto(self.active_user, key)
                 nome_utente_ricercato = key
 
             # caso in cui ci sono più risultati
@@ -318,7 +305,7 @@ class Manager:
                             continue
 
                         key, _ = risultati_contati[i][1]  # Estrai la chiave dalla lista
-                        output = self.r.sadd(f"user:{self.active_user}:contatti", key)
+                        output = self.db.set_contatto(self.active_user, key)
 
                         nome_utente_ricercato = key
                         break
@@ -329,15 +316,8 @@ class Manager:
         # stampa in base all'output del'add di redis
         if output == 0:
             print(f"\nL'utente {nome_utente_ricercato} è già nei contatti.")
-        if output == 1:
-            ## crea la chat privata
-            import uuid
-            chat_id = str(uuid.uuid1())
-            self.r.sadd(f"user:{self.active_user}:chats", chat_id)
-            self.r.sadd(f"user:{key}:chats", chat_id)
-            
-            self.r.sadd(f"chat:{chat_id}", self.active_user, key)
-            print(f"\nUtente {nome_utente_ricercato} aggiunto ai contatti.")
+        else: 
+            print(f"\nUtente {key} aggiunto ai contatti.")
             
         input("Premi 'invio' per continuare...")
 
@@ -371,14 +351,14 @@ class Manager:
             return
 
         nome_utente = list(amicizie)[scelta - 1]
-        self.r.srem(f"user:{self.active_user}:contatti", nome_utente)
+        self.db.del_contatto(self.active_user, nome_utente)
         
         print('Contatto rimosso con successo,')
         input('Premi invio per continuare...')
 
     @schermata
     def mostra_contatti(self):
-        contatti = self.r.smembers(f"user:{self.active_user}:contatti")
+        contatti = self.db.get_contatti(self.active_user)
         if not contatti:
             print("\nNon hai contatti.")
         else:
@@ -415,7 +395,7 @@ q- Torna al menù''')
 
 
 if __name__ == "__main__":
-    manager = Manager()   
+    manager = Manager(8765)   
     
     while True:
         manager.menu_iniziale()
