@@ -1,5 +1,7 @@
 import redis
 import os
+from datetime import datetime
+import time
 
 # wrapper per le differenti schermate
 def schermata(funzione):
@@ -60,14 +62,52 @@ q- Esci dal programma""")
 
     @schermata
     def menu_chat(self):
+        print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
+        print()
+        
         chat_ids = self.r.smembers(f'user:{self.active_user}:chats')
-        print(chat_ids)
+        # print(chat_ids)
         
         for i, chat_id in enumerate(chat_ids):
             componenti = self.r.smembers(f'chat:{chat_id}')
-            print(f'{i+1}- Chat {", ".join([e for e in componenti if e != self.active_user])}')
+            print(f'{i+1}- Chat con {", ".join([e for e in componenti if e != self.active_user])}')
         
-        input('\n:')
+        scelta = input('\nInserisci l\'indice della chat da aprire: ')
+        
+        try:
+            scelta = int(scelta)
+            if scelta < 1 or scelta > len(chat_ids):
+                raise ValueError
+        except ValueError:
+            print('\nRisposta errata,')
+            input('Premere invio per continuare...')
+            return
+        
+        chat_id = list(chat_ids)[scelta-1]
+        print(chat_id)
+        self.chat(chat_id)
+    
+    @schermata
+    def chat(self, chat_id):
+        messaggi = self.r.zrange(f'chat:{chat_id}:messaggi', 0, -1)
+        
+        if not messaggi: 
+            print('Sembra che al momenti non siano presenti messaggi, manda un saluto al tuo contatto!')
+            
+        else:
+            for messaggio in messaggi:
+                print(messaggio)
+        
+        nuovo_messaggio = input('\nScrivi (lascia vuoto per uscire): ')
+        if len(nuovo_messaggio) == 0:
+            return
+
+        t = time.time()
+        date = ":".join(str(datetime.fromtimestamp(t)).split(':')[:-1])
+        
+        nuovo_messaggio =  date + ' ' + self.active_user + ': ' + nuovo_messaggio
+        self.r.zadd(f'chat:{chat_id}:messaggi', {nuovo_messaggio:time.time()})
+        self.chat(chat_id)
 
     @schermata
     def registrazione(self):
