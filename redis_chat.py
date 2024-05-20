@@ -21,7 +21,7 @@ class Manager:
     ):
         self.r = redis.Redis(
             host="localhost",
-            port=6379,
+            port=8765,
             db=0,
             decode_responses=True
         )
@@ -39,6 +39,7 @@ class Manager:
 3- Logout
 4- Chat
 5- Contatti
+6- Imposta modalità non disturbare
 q- Esci dal programma""")
         
         scelta = input("\nScelta: ")
@@ -54,11 +55,37 @@ q- Esci dal programma""")
                 self.menu_chat()
             case "5":
                 self.contatti()
+            case "6":
+                self.non_disturbare()
             case "q":
                 exit(0)
             case _:
                 print('\nScelta non valida,')
                 input('Premi invio per continuare.')
+    
+    @schermata
+    def non_disturbare(self):
+        if self.active_user == None: return
+        print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
+        print()
+            
+        modalita = self.r.get(f'user:{self.active_user}:non_disturbare')
+        if modalita == None or modalita == 'off':
+            print("Modalità non disturbare disattivata")
+
+            decisione = input("Vuoi attivare la modalità? (y/n)\n:")
+
+            if decisione == "y":
+                self.r.set(f'user:{self.active_user}:non_disturbare', 'on')
+        else:
+            print("Modalità non disturbare attiva")
+
+            decisione = input("Vuoi disattivare la modalità? (y/n)\n:")
+
+            if decisione == "y":
+                self.r.set(f'user:{self.active_user}:non_disturbare', 'off')
+
+        input('\nPremi invio per continuare...')
 
     @schermata
     def menu_chat(self):
