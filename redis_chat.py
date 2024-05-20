@@ -19,7 +19,7 @@ class Manager:
     ):
         self.r = redis.Redis(
             host="localhost",
-            port=8765,
+            port=6379,
             db=0,
             decode_responses=True
         )
@@ -210,7 +210,7 @@ q- Esci dal programma""")
                 print("\nScegli uno dei risultati:")
 
                 # stampa dei risultati
-                [print(i+1, key) for i, (key,_) in risultati_contati]
+                [print(f"{i+1}-", key) for i, (key,_) in risultati_contati]
 
                 # while per far scegliere all'utente il risultato senza errori
                 while True:
@@ -272,7 +272,19 @@ q- Esci dal programma""")
         
         print('Contatto rimosso con successo,')
         input('Premi invio per continuare...')
+
+    @schermata
+    def mostra_contatti(self):
+        contatti = self.r.smembers(f"user:{self.active_user}:contatti")
+        if not contatti:
+            print("\nNon hai contatti.")
+        else:
+            print(f"\nI tuoi contatti sono:")
+            for i, contatto in enumerate(contatti):
+                print(f'{i+1}-',contatto)
         
+        input("\nPremi 'invio' per continuare...")
+
     @schermata
     def contatti(self):
         print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
@@ -296,15 +308,8 @@ q- Torna al menù''')
             case "2":
                 self.rimuovi_contatto()
             case "3":
-                contatti = self.r.smembers(f"user:{self.active_user}:contatti")
-                if not contatti:
-                    print("\nNon hai contatti.")
-                else:
-                    print(f"\nI tuoi contatti sono:")
-                    for i, contatto in enumerate(contatti):
-                        print(f'{i+1}. {contatto}')
-                
-                input("\nPremi 'invio' per continuare...")
+                self.mostra_contatti()
+
 
 if __name__ == "__main__":
     manager = Manager()   
