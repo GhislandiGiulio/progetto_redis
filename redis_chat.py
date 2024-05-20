@@ -49,7 +49,7 @@ q- Esci dal programma""")
             case "3":
                 self.logout()
             case "4":
-                ...
+                self.menu_chat()
             case "5":
                 self.contatti()
             case "q":
@@ -57,6 +57,17 @@ q- Esci dal programma""")
             case _:
                 print('\nScelta non valida,')
                 input('Premi invio per continuare.')
+
+    @schermata
+    def menu_chat(self):
+        chat_ids = self.r.smembers(f'user:{self.active_user}:chats')
+        print(chat_ids)
+        
+        for i, chat_id in enumerate(chat_ids):
+            componenti = self.r.smembers(f'chat:{chat_id}')
+            print(f'{i+1}- Chat {", ".join([e for e in componenti if e != self.active_user])}')
+        
+        input('\n:')
 
     @schermata
     def registrazione(self):
@@ -192,7 +203,6 @@ q- Esci dal programma""")
 
         # azioni in base ai risultati
         match numero_risultati:
-
             # caso in cui non ci sono risultati
             case 0:
                 print("\nNessun risultato trovato")
@@ -234,8 +244,15 @@ q- Esci dal programma""")
         if output == 0:
             print(f"\nL'utente {nome_utente_ricercato} è già nei contatti.")
         if output == 1:
+            ## crea la chat privata
+            import uuid
+            chat_id = str(uuid.uuid1())
+            self.r.sadd(f"user:{self.active_user}:chats", chat_id)
+            self.r.sadd(f"user:{key}:chats", chat_id)
+            
+            self.r.sadd(f"chat:{chat_id}", self.active_user, key)
             print(f"\nUtente {nome_utente_ricercato} aggiunto ai contatti.")
-
+            
         input("Premi 'invio' per continuare...")
 
     @schermata
