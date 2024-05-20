@@ -33,14 +33,17 @@ class Manager:
         print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
         print()
         
+        ## LOGIN, CHAT E CONTATTI devono essere disonibili solo una volta avcer efettuto l'accesso
         print("""Scegli un'opzione:
 1- Registrazione 
-2- Login 
-3- Logout
+2- Login """)
+        if self.active_user:
+            print("""3- Logout
 4- Chat
 5- Contatti
-6- Imposta modalità non disturbare
-q- Esci dal programma""")
+6- Imposta modalità non disturbare""")
+
+        print('q- Esci dal programma')
         
         scelta = input("\nScelta: ")
 
@@ -133,12 +136,6 @@ q- Esci dal programma""")
         if len(nuovo_messaggio) == 0:
             return
 
-        t = time.time()
-        date = ":" + str(datetime.fromtimestamp(t)).split(':')[:-1]
-        
-        nuovo_messaggio =  date + ' ' + self.active_user + ': ' + nuovo_messaggio
-
-        
         ## controllo della modalità non disturbare
         componenti = self.r.smembers(f'chat:{chat_id}')
         amico = [e for e in componenti if e != self.active_user][0]
@@ -148,6 +145,10 @@ q- Esci dal programma""")
             print('\nLa persona con cui stai provando a comunicare ha la modalità non disturbare attiva!')
             input('Premi invio per continuare...')
         else:    
+            t = time.time()
+            date = ":".join(str(datetime.fromtimestamp(t)).split(':')[:-1])
+            
+            nuovo_messaggio =  date + ' ' + self.active_user + ': ' + nuovo_messaggio
             self.r.zadd(f'chat:{chat_id}:messaggi', {nuovo_messaggio:time.time()})
             self.chat(chat_id)
 
