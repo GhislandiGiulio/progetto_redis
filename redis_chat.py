@@ -21,7 +21,7 @@ def schermata(funzione):
             # Per Unix/Linux/macOS
             os.system('clear')
 
-        print("Utente attivo: ", active_user)
+        print("Utente attivo: ", active_user if active_user != None else "guest")
         funzione()
 
     return wrapper
@@ -29,21 +29,20 @@ def schermata(funzione):
 @schermata
 def menu_iniziale():
 
-    try:
-        scelta = int(input("Scegli un'opzione:\n1- Registrazione \n2- Login \n3- Logout\n4- Chat\n5- Esci dal programma\n"))
-    except ValueError:
-        return
+    scelta = input("Scegli un'opzione:\n1- Registrazione \n2- Login \n3- Logout\n4- Chat\n5- Contatti\nq- Esci dal programma\n:")
 
     match scelta:
-        case 1:
+        case "1":
             registrazione()
-        case 2:
+        case "2":
             login()
-        case 3:
+        case "3":
             logout()
-        case 4:
+        case "4":
             ...
-        case 5:
+        case "5":
+            ...
+        case "q":
             exit(0)
         case _:
             pass
