@@ -28,7 +28,7 @@ def schermata(funzione):
 
 @schermata
 def menu_iniziale():
-
+    print('prova')
     scelta = input("Scegli un'opzione:\n1- Registrazione \n2- Login \n3- Logout\n4- Chat\n5- Contatti\nq- Esci dal programma\n:")
 
     match scelta:
