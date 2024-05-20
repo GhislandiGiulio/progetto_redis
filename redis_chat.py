@@ -123,6 +123,8 @@ class Manager:
     
     @schermata
     def chat(self, chat_id):
+        # TODO: quando scriviamo a qualcuno se abbiamo la modalità non disturbare attiva dovremmo disattivarla
+        
         messaggi = self.r.zrange(f'chat:{chat_id}:messaggi', 0, -1)
         
         if not messaggi: 
@@ -268,6 +270,8 @@ class Manager:
         
     @schermata
     def aggiungi_contatto(self):
+        # TODO: l'utente non dovrebbe essere in grado di mandare la richiesta a se stesso
+        
         print("Utente attivo:", self.active_user if self.active_user != None else "guest")
         print()
 
