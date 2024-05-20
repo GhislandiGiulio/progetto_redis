@@ -167,6 +167,9 @@ def aggiungi_contatto():
 
     # calcolo numero di risultati
     numero_risultati = len(keys)
+    
+    # creazione oggetto enumerate per mostrare risultati
+    risultati_contati = list(enumerate(keys.items()))
 
     # azioni in base ai risultati
     match numero_risultati:
@@ -179,12 +182,13 @@ def aggiungi_contatto():
 
         # caso in cui c'è solo un risultato
         case 1:
-            output = r.sadd(f"{active_user}:contatti", nome_utente_ricercato)
+            key, _ = risultati_contati[0][1]  # Estrai la chiave dalla lista
+            output = r.sadd(f"{active_user}:contatti", key)
+            nome_utente_ricercato = key
 
         # caso in cui ci sono più risultati
         case _:
             print("Scegli uno dei risultati:")
-            risultati_contati = list(enumerate(keys.items()))
 
             # stampa dei risultati
             [print(i+1, key) for i, (key,_) in risultati_contati]
