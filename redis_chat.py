@@ -10,6 +10,7 @@ r = redis.Redis(
                     db=0,
                     decode_responses=True
                 )
+print('v')
 
 # wrapper per le differenti schermate
 def schermata(funzione):
