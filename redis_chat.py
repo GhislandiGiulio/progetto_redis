@@ -64,15 +64,19 @@ q- Esci dal programma""")
     def menu_chat(self):
         print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
         print()
+        print("Se vuoi uscire in qualunque momento, inserisci 'q'")
+
         
         chat_ids = self.r.smembers(f'user:{self.active_user}:chats')
-        # print(chat_ids)
         
         for i, chat_id in enumerate(chat_ids):
             componenti = self.r.smembers(f'chat:{chat_id}')
             print(f'{i+1}- Chat con {", ".join([e for e in componenti if e != self.active_user])}')
         
-        scelta = input('\nInserisci l\'indice della chat da aprire: ')
+        scelta = input("\nInserisci l'indice della chat da aprire: ")
+
+        if scelta.lower() == "q":
+            return
         
         try:
             scelta = int(scelta)
@@ -92,7 +96,7 @@ q- Esci dal programma""")
         messaggi = self.r.zrange(f'chat:{chat_id}:messaggi', 0, -1)
         
         if not messaggi: 
-            print('Sembra che al momenti non siano presenti messaggi, manda un saluto al tuo contatto!')
+            print('Sembra che al momento non siano presenti messaggi, manda un saluto al tuo contatto!')
             
         else:
             for messaggio in messaggi:
@@ -103,7 +107,7 @@ q- Esci dal programma""")
             return
 
         t = time.time()
-        date = ":".join(str(datetime.fromtimestamp(t)).split(':')[:-1])
+        date = ":" + str(datetime.fromtimestamp(t)).split(':')[:-1]
         
         nuovo_messaggio =  date + ' ' + self.active_user + ': ' + nuovo_messaggio
         self.r.zadd(f'chat:{chat_id}:messaggi', {nuovo_messaggio:time.time()})
@@ -223,7 +227,6 @@ q- Esci dal programma""")
             if decisione == "y":
                 self.active_user = None
         
-
     @schermata
     def aggiungi_contatto(self):
         print("Utente attivo:", self.active_user if self.active_user != None else "guest")
