@@ -279,7 +279,7 @@ class Manager:
         risultati_ricerca_utenti = self.db.get_utenti(nome_utente_ricercato)
 
         # rimozione dell'utente attivo (se stessi) dai risultati della ricerca
-        if "giulio" in risultati_ricerca_utenti.keys():
+        if self.active_user in risultati_ricerca_utenti.keys():
             risultati_ricerca_utenti.pop(self.active_user)
 
         # calcolo numero di risultati
