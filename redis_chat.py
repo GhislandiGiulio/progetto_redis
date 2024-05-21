@@ -123,7 +123,8 @@ class Manager:
             
         else:
             for messaggio in messaggi:
-                print(messaggio)
+                data = datetime.fromtimestamp(float(messaggio.split(':')[0]))
+                print(f'[{str(data).split(".")[0]}]{":".join(messaggio.split(":")[1:])}')
         
         nuovo_messaggio = input('\nScrivi (lascia vuoto per uscire): ')
         if len(nuovo_messaggio) == 0:
@@ -139,9 +140,9 @@ class Manager:
             input('Premi invio per continuare...')
         else:    
             t = time.time()
-            date = ":".join(str(datetime.fromtimestamp(t)).split(':')[:-1])
+            # date = ":".join(str(datetime.fromtimestamp(t)).split(':')[:-1])
             
-            nuovo_messaggio =  date + ' ' + self.active_user + ': ' + nuovo_messaggio
+            nuovo_messaggio =  str(t) + ': ' + self.active_user + ': ' + nuovo_messaggio
             self.db.add_conversazione(self.active_user, contatto, nuovo_messaggio, t)
             self.chat(contatto)
 

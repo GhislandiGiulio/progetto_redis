@@ -2,3 +2,5 @@
 test.py
 .vscode
 __pycache__
+redis_stream.py
+redis_stream_send.py
