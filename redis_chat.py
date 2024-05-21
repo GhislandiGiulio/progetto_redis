@@ -160,6 +160,11 @@ class Manager:
             # verifica se l'utente vuole uscire
             if nome_utente == "q":
                 return
+            
+            # verifica presenza di spazi
+            if " " in nome_utente:
+                print("Il nome utente non può contenere spazi")
+                continue
 
             # verifica sulla lunghezza minima e massima del nome utente
             lunghezza_nomeutente = len(nome_utente)
@@ -184,15 +189,14 @@ class Manager:
                 # verifica se l'utente vuole uscire
                 if numero_telefono == "q":
                     return
-
+                
+                # verifica della lunghezza del numero
+                lunghezza_numero = len(numero_telefono)    
+                if lunghezza_numero < 12 or lunghezza_numero > 13:
+                    print("Il numero di telefono deve avere 12/13 cifre (incluso il prefisso).")
+                    continue 
+                
                 try:
-                    
-                    # verifica della lunghezza del numero
-                    lunghezza_numero = len(numero_telefono)    
-                    if lunghezza_numero < 12 or lunghezza_numero > 13:
-                        print("Il numero di telefono deve avere 12/13 cifre (incluso il prefisso).")
-                        continue 
-
                     # tentativo di casting a numero intero per verifica presenza caratteri non numerici
                     numero_telefono = int(numero_telefono)
                     break
@@ -208,17 +212,29 @@ class Manager:
             print("Numero già registrato.")
 
         
-        # input della password
-        password = input("Inserisci la tua nuova password: ")
-        
-        # verifica se l'utente vuole uscire
-        if password == "q":
-            return
+        while True:
+            # input della password
+            password = input("Inserisci la tua nuova password: ")
+            
+            # verifica se l'utente vuole uscire
+            if password == "q":
+                return
+            
+            # verifica presenza di spazi
+            if " " in password:
+                print("La password non può contenere spazi")
+                continue
+            
+            break
+
         
         # aggiunta delle chiavi all'hashmap Redis
         self.db.set_utente(nome_utente, password)
         self.db.set_numero_telefono(nome_utente, numero_telefono)
         self.active_user = nome_utente
+
+        print(f'\nUtente "{nome_utente}" con numero di telefono "{numero_telefono}" registrato')
+        input("Premi spazio per continuare...")
 
     @schermata
     def login(self):
