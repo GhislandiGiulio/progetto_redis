@@ -63,9 +63,14 @@ Ritorna None se esso non esiste"""
     
     def set_contatto(self, utente, contatto):
         """Aggiunge un contatto ad un utente"""
-        return self.redis.sadd(
+        self.redis.sadd(
             self.chiavi.utente_amici(utente),
             contatto,
+        )
+        
+        return self.redis.sadd(
+            self.chiavi.utente_amici(contatto),
+            utente,
         )
     
     def del_contatto(self, utente, contatto):
