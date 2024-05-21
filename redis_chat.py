@@ -339,7 +339,7 @@ class Manager:
         print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
         print()
 
-        amicizie = self.r.smembers(f"user:{self.active_user}:contatti")
+        amicizie = self.db.get_contatti(self.active_user)
         if not amicizie:
             print("Non hai contatti.")
             input("Premi invio per continuare...")
