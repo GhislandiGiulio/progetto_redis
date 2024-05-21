@@ -269,14 +269,24 @@ class Manager:
         # inserimento da tastiera del nome da ricercare
         nome_utente_ricercato = input("Inserisci il nome utente del contatto da aggiungere: ")
 
+        # controlli sull'input
+        if nome_utente_ricercato == "":
+            print("Non hai inserito un utente valido.")
+            input("Premi invio per continuare...")
+            return
+
         # scannerizzo la stringa inserita dall'utente
-        keys = self.db.get_utenti(nome_utente_ricercato)
+        risultati_ricerca_utenti = self.db.get_utenti(nome_utente_ricercato)
+
+        # rimozione dell'utente attivo (se stessi) dai risultati della ricerca
+        if "giulio" in risultati_ricerca_utenti.keys():
+            risultati_ricerca_utenti.pop(self.active_user)
 
         # calcolo numero di risultati
-        numero_risultati = len(keys)
+        numero_risultati = len(risultati_ricerca_utenti)
         
         # creazione oggetto enumerate per mostrare risultati
-        risultati_contati = list(enumerate(keys.items()))
+        risultati_contati = list(enumerate(risultati_ricerca_utenti.items()))
 
         # azioni in base ai risultati
         match numero_risultati:
