@@ -14,6 +14,17 @@ class Database:
         
         self.chiavi = Chiavi()
         
+    def set_utente(
+        self,
+        username: str,
+        password: str,
+    ): 
+        """Registra un utente nel database"""
+        self.redis.hset(
+            self.chiavi.utenti,
+            username,
+            password
+        )
     
     def get_utente(self, utente):
         """Ritorna/Verifica la password di un utente,
@@ -30,29 +41,18 @@ Ritorna None se esso non esiste"""
         )
         return keys
     
-    def get_numero_telefono(self, phone_number):
-        """Ritorna/Verifica l'esistenza di un numero di telefono"""
-        return self.redis.hget(self.chiavi.numeri_telefono, phone_number)
-    
-    def registra_utente(
-        self,
-        username: str,
-        password: str,
-        numero_telefono: str    
-    ): 
-        """Registra un utente nel database"""
-        self.redis.hset(
-            self.chiavi.utenti,
-            username,
-            password
-        )
-
+    def set_numero_telefono(self, username, numero_telefono):
+        """Registra un numero di telefono nel database"""
         self.redis.hset(
             self.chiavi.numeri_telefono,
             numero_telefono,
             username
         )
         
+    def get_numero_telefono(self, phone_number):
+        """Ritorna/Verifica l'esistenza di un numero di telefono"""
+        return self.redis.hget(self.chiavi.numeri_telefono, phone_number)
+    
     def get_contatti(self, utente):
         """Ritorna tutti i contatti di un utente"""
         return self.redis.smembers(self.chiavi.utente_amici(utente))

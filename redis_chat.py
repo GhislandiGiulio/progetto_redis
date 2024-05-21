@@ -216,7 +216,8 @@ class Manager:
             return
         
         # aggiunta delle chiavi all'hashmap Redis
-        self.db.registra_utente(nome_utente, password, numero_telefono)
+        self.db.set_utente(nome_utente, password)
+        self.db.set_numero_telefono(nome_utente, numero_telefono)
         self.active_user = nome_utente
 
     @schermata
