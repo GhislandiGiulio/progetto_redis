@@ -93,7 +93,7 @@ class Manager:
         print("Se vuoi uscire in qualunque momento, inserisci 'q'")
         contatti = self.db.get_contatti(self.active_user)
         for i, utente in enumerate(contatti):
-            print(f"{i}. chat con {utente}")
+            print(f"{i+1}. chat con {utente}")
         
         scelta = input("\nInserisci l'indice della chat da aprire: ")
 
@@ -128,6 +128,9 @@ class Manager:
         nuovo_messaggio = input('\nScrivi (lascia vuoto per uscire): ')
         if len(nuovo_messaggio) == 0:
             return
+        
+        if self.db.get_non_disturbare(self.active_user) == "on":
+            self.db.set_non_disturbare(self.active_user, "off") 
 
         ## controllo della modalità non disturbare
         non_disturbare = self.db.get_non_disturbare(contatto)
@@ -395,7 +398,7 @@ q- Torna al menù''')
 
 
 if __name__ == "__main__":
-    manager = Manager(8765)   
+    manager = Manager(6379)   
     
     while True:
         manager.menu_iniziale()
