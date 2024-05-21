@@ -134,7 +134,6 @@ class Manager:
 
         ## controllo della modalità non disturbare
         non_disturbare = self.db.get_non_disturbare(contatto)
-        
         if non_disturbare == 'on':
             print('\nLa persona con cui stai provando a comunicare ha la modalità non disturbare attiva!')
             input('Premi invio per continuare...')

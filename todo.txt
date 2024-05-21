@@ -1,0 +1,9 @@
+1. Aggiungere notifiche real time (la chat si deve aggiornare quando riceviamo un mess)
+2. Secondo la consegna le chat devono usare > e < al posto dei nomi utenti (> se scriviamo e < se li riceviamo)
+3. Aggiungere le chat a tempo (si distrugge dopo un minuto)
+4. Aggiungere un messaggio d'errore per il login
+5. OPZIONALE: aggiungere un counter delle notifiche nella schermata delle chat (in moso da sapere chi e quanto ci hanno scritto)
+6. OPZIONALE: aggiungere un testo (come quello del nome utente attivo) per indicare se abbiamo attiva la modalità non disturbare
+
+NB: le cose OPZIONALI non sono valutate dai prof!
+Svolgere prima le cose non controssagnate come tali

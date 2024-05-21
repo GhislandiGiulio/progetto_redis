@@ -100,5 +100,4 @@ class Chiavi:
         self.numeri_telefono = 'phone_numbers' ## per salvare i numeri telefonici di ogni utente (usato per verificare l'esistenza di un numero di telefono)
         self.utente_amici = lambda id_utente: f'user:{id_utente}:friends' ## per salvare gli utenti che fanno parte dei contatti
         self.utente_non_disturbare = lambda id_utente: f'user:{id_utente}:do_not_disturb' ## per salvare gli utenti che non vogliono ricevere notifiche
-        # self.utente_chats = lambda id_utente: f'user:{id_utente}:chats' ## per salvare gli id delle chat di un utente
         self.conversazione = lambda id_utente1, id_utente2: f'chat:{sorted([id_utente1, id_utente2])[0]}:{sorted([id_utente1, id_utente2])[1]}' ## per salvare i messaggi di una chat
