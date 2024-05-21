@@ -75,21 +75,6 @@ Ritorna None se esso non esiste"""
             contatto,
         )
     
-    # def set_chat(self, utente, contatto, id_chat):
-    #     self.r.sadd(
-    #         self.chiavi.utente_chats(utente),
-    #         id_chat
-    #     )
-    #     self.r.sadd(
-    #         self.chiavi.utente_chats(contatto), 
-    #         id_chat
-    #     )
-        
-    #     self.redis.sadd(
-    #         self.chiavi.chat_componenti(id_chat),
-    #         *[utente, contatto]
-    #     )
-    
     def set_non_disturbare(self, utente, valore):
         """Imposta il valore che determina la modalità non disturbare (on/off)"""
         self.redis.set(self.chiavi.utente_non_disturbare(utente), valore)
@@ -116,11 +101,4 @@ class Chiavi:
         self.utente_amici = lambda id_utente: f'user:{id_utente}:friends' ## per salvare gli utenti che fanno parte dei contatti
         self.utente_non_disturbare = lambda id_utente: f'user:{id_utente}:do_not_disturb' ## per salvare gli utenti che non vogliono ricevere notifiche
         # self.utente_chats = lambda id_utente: f'user:{id_utente}:chats' ## per salvare gli id delle chat di un utente
-        self.conversazione = lambda id_utente1, id_utente2: f'chat:{sorted([id_utente1, id_utente2])[0]}:{sorted([id_utente1, id_utente2])[0]}' ## per salvare i messaggi di una chat
-
-if __name__ == '__main__':
-    # db = Database(6379)
-    # print(db.get_utenti('flavio'))
-    
-    c = Chiavi()
-    print(c.utente_amici('ciao'))
+        self.conversazione = lambda id_utente1, id_utente2: f'chat:{sorted([id_utente1, id_utente2])[0]}:{sorted([id_utente1, id_utente2])[1]}' ## per salvare i messaggi di una chat
