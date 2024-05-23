@@ -114,37 +114,42 @@ class Manager:
     
     @schermata
     def chat(self, contatto):
-        # TODO: quando scriviamo a qualcuno se abbiamo la modalità non disturbare attiva dovremmo disattivarla
-        
-        messaggi = self.db.get_conversazione(self.active_user, contatto)
-        
-        if not messaggi: 
-            print('Sembra che al momento non siano presenti messaggi, manda un saluto al tuo contatto!')
-            
-        else:
-            for messaggio in messaggi:
-                data = datetime.fromtimestamp(float(messaggio.split(':')[0]))
-                print(f'[{str(data).split(".")[0]}]{":".join(messaggio.split(":")[1:])}')
-        
-        nuovo_messaggio = input('\nScrivi (lascia vuoto per uscire): ')
-        if len(nuovo_messaggio) == 0:
-            return
-        
-        if self.db.get_non_disturbare(self.active_user) == "on":
-            self.db.set_non_disturbare(self.active_user, "off") 
 
-        ## controllo della modalità non disturbare
-        non_disturbare = self.db.get_non_disturbare(contatto)
-        if non_disturbare == 'on':
-            print('\nLa persona con cui stai provando a comunicare ha la modalità non disturbare attiva!')
-            input('Premi invio per continuare...')
-        else:    
-            t = time.time()
-            # date = ":".join(str(datetime.fromtimestamp(t)).split(':')[:-1])
+        while True:
+
+            # estrazione dei messaggi dal db
+            messaggi = self.db.get_conversazione(self.active_user, contatto)
             
-            nuovo_messaggio =  str(t) + ': ' + self.active_user + ': ' + nuovo_messaggio
-            self.db.add_conversazione(self.active_user, contatto, nuovo_messaggio, t)
-            self.chat(contatto)
+            # print nel caso in cui non ci siano ancora messaggi
+            if not messaggi: 
+                print('Sembra che al momento non siano presenti messaggi, manda un saluto al tuo contatto!')
+            
+            # print dei messaggi con timestamp
+            else:
+                for messaggio in messaggi:
+                    data = datetime.fromtimestamp(float(messaggio.split(':')[0]))
+                    print(f'[{str(data).split(".")[0]}]{":".join(messaggio.split(":")[1:])}')
+            
+            # inserimento del messaggio
+            nuovo_messaggio = input('\nScrivi (lascia vuoto per uscire): ')
+            if nuovo_messaggio == "":
+                break
+            
+            # disattivazione della DnD se l'utente che ce l'ha attiva invia un messaggio
+            if self.db.get_non_disturbare(self.active_user) == "on":
+                self.db.set_non_disturbare(self.active_user, "off") 
+
+            ## controllo della modalità non disturbare
+            non_disturbare = self.db.get_non_disturbare(contatto)
+            if non_disturbare == 'on':
+                print('\nLa persona con cui stai provando a comunicare ha la modalità non disturbare attiva!')
+                input('Premi invio per continuare...')
+            else:    
+                t = time.time()
+                # date = ":".join(str(datetime.fromtimestamp(t)).split(':')[:-1])
+                
+                nuovo_messaggio =  str(t) + ': ' + self.active_user + ': ' + nuovo_messaggio
+                self.db.add_conversazione(self.active_user, contatto, nuovo_messaggio, t)
 
     @schermata
     def registrazione(self):
