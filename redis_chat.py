@@ -260,7 +260,6 @@ class Manager:
         # esci se l'utente inserisce "q"
         if nome_utente == "q":
             return
-
         # inserimento della password
         password = input("Inserisci la password: ")
 
@@ -273,6 +272,15 @@ class Manager:
 
         if output == password and output != None :
             self.active_user = nome_utente
+            output("Login effettuato")
+            input("Premi 'invio' per continuare...")
+            return
+        
+        print ("Nome utente o password errati, riprovare")
+        input("Premi 'invio' per continuare...")
+        return
+        
+        
 
     @schermata
     def logout(self):
