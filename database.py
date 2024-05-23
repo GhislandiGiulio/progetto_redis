@@ -32,7 +32,7 @@ class Database:
             password
         )
     
-    def get_utente(self, utente):
+    def get_pass_utente(self, utente):
         """Ritorna/Verifica la password di un utente,
 Ritorna None se esso non esiste"""
         return self.redis.hget(self.chiavi.utenti, utente)

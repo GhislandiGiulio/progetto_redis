@@ -269,7 +269,7 @@ class Manager:
             return
         
         # verifica della correttezza della password / esistenza dell'utente inserito
-        output = self.db.get_utente(nome_utente)
+        output = self.db.get_pass_utente(nome_utente)
 
         if output == password and output != None :
             self.active_user = nome_utente
