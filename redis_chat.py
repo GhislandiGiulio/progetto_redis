@@ -216,7 +216,7 @@ class Manager:
                     print("Il numero di telefono contiene simboli oltre ai numeri.")
 
             # verifica dell'esistenza pregressa del numero di telefono
-            if self.db.phonenumber_exists:
+            if self.db.phonenumber_exists(numero_telefono):
                 print("Numero già registrato.")
                 continue
 
