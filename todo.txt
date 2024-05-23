@@ -5,6 +5,7 @@
 5. OPZIONALE: aggiungere un counter delle notifiche nella schermata delle chat (in moso da sapere chi e quanto ci hanno scritto)
 6. OPZIONALE: aggiungere un testo (come quello del nome utente attivo) per indicare se abbiamo attiva la modalità non disturbare
 7. OPZIONALE: aggiungere le chat di gruppo
+8.OPZIONALE: fare un comando che permette di cancellare l'account
 
 NB: le cose OPZIONALI non sono valutate dai prof!
 Svolgere prima le cose non controssagnate come tali
