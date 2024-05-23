@@ -245,7 +245,7 @@ class Manager:
         self.active_user = nome_utente
 
         print(f'\nUtente "{nome_utente}" con numero di telefono "{numero_telefono}" registrato')
-        input("Premi spazio per continuare...")
+        input("Premi invio per continuare...")
 
     @schermata
     def login(self):
