@@ -185,13 +185,12 @@ class Manager:
                 continue
 
             # verifica dell'esistenza pregressa del nome utente
-            output = self.db.get_utente(nome_utente)
-            if output == None:
-                break
-            
-            print("Nome utente già inserito.")
+            if self.db.user_exists(nome_utente):
+                print("Nome utente già esistente.")
+                continue
 
-        
+            break
+            
         # ciclo per inserimento corretto del numero di telefono
         while True:
             # ciclo per verifica della formattazione del numero di telefono    
@@ -217,13 +216,13 @@ class Manager:
                     print("Il numero di telefono contiene simboli oltre ai numeri.")
 
             # verifica dell'esistenza pregressa del numero di telefono
-            output = self.db.get_numero_telefono(numero_telefono)
-            if output == None:
-                break
+            if self.db.phonenumber_exists:
+                print("Numero già registrato.")
+                continue
 
-            print("Numero già registrato.")
+            break
 
-        
+        # ciclo per inserimento corretto della password
         while True:
             # input della password
             password = input("Inserisci la tua nuova password: ")

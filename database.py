@@ -14,6 +14,12 @@ class Database:
         
         self.chiavi = Chiavi()
         
+    def user_exists(self, utente):
+        return self.redis.hexists("users", utente)
+
+    def phonenumber_exists(self, phone_number):
+        return self.redis.hexists("phone_numbers", phone_number)
+
     def set_utente(
         self,
         username: str,
