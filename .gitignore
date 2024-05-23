@@ -4,3 +4,5 @@ test.py
 __pycache__
 redis_stream.py
 redis_stream_send.py
+git2
+gitesame
