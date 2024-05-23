@@ -111,12 +111,10 @@ class Manager:
         
         contatto = list(contatti)[scelta-1]
         self.chat(contatto)
-    
+
     @schermata
-    def chat(self, contatto):
-
-        while True:
-
+    def mostra_chat(self, contatto):
+                        
             # estrazione dei messaggi dal db
             messaggi = self.db.get_conversazione(self.active_user, contatto)
             
@@ -129,9 +127,18 @@ class Manager:
                 for messaggio in messaggi:
                     data = datetime.fromtimestamp(float(messaggio.split(':')[0]))
                     print(f'[{str(data).split(".")[0]}]{":".join(messaggio.split(":")[1:])}')
-            
+
+    def chat(self, contatto):
+
+        while True:
+
+            # stampa della chat
+            self.mostra_chat(contatto)
+
             # inserimento del messaggio
             nuovo_messaggio = input('\nScrivi (lascia vuoto per uscire): ')
+
+            # controllo messaggio vuoto per uscire
             if nuovo_messaggio == "":
                 break
             
