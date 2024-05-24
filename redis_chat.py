@@ -235,7 +235,7 @@ class Manager:
         # ciclo per inserimento corretto della password
         while True:
             # input della password
-            password = input("Inserisci la tua nuova password: ")
+            password = pwinput.pwinput(prompt='Inserisci la password: ', mask='*')
             
             # verifica se l'utente vuole uscire
             if password == "q":
@@ -246,8 +246,12 @@ class Manager:
                 print("La password non può contenere spazi")
                 continue
             
-            break
+            conferma_password = pwinput.pwinput(prompt='Conferma la password: ', mask='*')
+            
+            if conferma_password == password:        
+                break
 
+            print('Le password non corrispondono\n')
         
         # aggiunta delle chiavi all'hashmap Redis
         self.db.set_utente(nome_utente, password)
