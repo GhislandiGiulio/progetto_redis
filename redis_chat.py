@@ -27,13 +27,17 @@ class Manager:
         print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
         
         contatti = self.db.get_contatti(self.active_user)
+        nuovi_messaggi_da = []
         for contatto in contatti:
             ultimo_accesso = self.db.get_ultimo_accesso(self.active_user, contatto)
             if not ultimo_accesso: continue
             
             nuovi_messaggi = self.db.check_nuovi_messaggi(self.active_user, contatto, ultimo_accesso)
             if nuovi_messaggi and len(nuovi_messaggi) > 0:
-                print(f'Hai nuovi messaggi da {contatto} (n.{len(nuovi_messaggi)})')
+                nuovi_messaggi_da.append(contatto)
+        
+        if nuovi_messaggi_da:
+            print(f'Hai nuovi messaggi da {", ".join(nuovi_messaggi_da)}')
         print()
     
     def menu_iniziale(self):
