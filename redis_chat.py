@@ -156,7 +156,7 @@ class Manager:
                 # date = ":".join(str(datetime.fromtimestamp(t)).split(':')[:-1])
                 
                 nuovo_messaggio =  str(t) + ': ' + self.active_user + ': ' + nuovo_messaggio
-                self.db.add_conversazione(self.active_user, contatto, nuovo_messaggio, t)
+                self.db.update_conversazione(self.active_user, contatto, nuovo_messaggio, t)
 
     @schermata
     def registrazione(self):

@@ -1,5 +1,5 @@
 import redis
-from uuid import uuid1
+import time
 
 class Database:
     """Questa classe è realizzata per raggruppare le funzioni che interagiscono con il database Redis e i valori delle chiavi"""
@@ -61,22 +61,22 @@ Ritorna None se esso non esiste"""
     
     def get_contatti(self, utente):
         """Ritorna tutti i contatti di un utente"""
-        return self.redis.smembers(self.chiavi.utente_amici(utente))
+        return self.redis.zrange(self.chiavi.utente_amici(utente), 0, -1, desc=True)
     
-    def get_contatto(self, utente, contatto):
-        """Ritorna/Verifica l'esistenza di un contatto"""
-        return self.redis.hget(self.chiavi.utente_amici(utente), contatto)
+    # def get_contatto(self, utente, contatto):
+    #     """Ritorna/Verifica l'esistenza di un contatto"""
+    #     return self.redis.hget(self.chiavi.utente_amici(utente), contatto)
     
     def set_contatto(self, utente, contatto):
         """Aggiunge un contatto ad un utente"""
-        self.redis.sadd(
+        self.redis.zadd(
             self.chiavi.utente_amici(utente),
-            contatto,
+            {contatto: 0},
         )
         
-        return self.redis.sadd(
+        return self.redis.zadd(
             self.chiavi.utente_amici(contatto),
-            utente,
+            {utente: 0},
         )
     
     def del_contatto(self, utente, contatto):
@@ -98,17 +98,22 @@ Ritorna None se esso non esiste"""
         """Ritorna tutti i messaggi di una chat"""
         return self.redis.zrange(self.chiavi.conversazione(utente, contatto), 0, -1)
 
-    def add_conversazione(self, utente, contatto, messaggio, score):
+    def update_conversazione(self, utente, contatto, messaggio, score):
         """Aggiunge un messaggio alla chat"""
         self.redis.zadd(
             self.chiavi.conversazione(utente, contatto),
             {messaggio: score}
         )
         
+        self.redis.zadd(
+            self.chiavi.utente_amici(contatto),
+            {utente: score}
+        )
+        
 class Chiavi:
     def __init__(self):
-        self.utenti = 'users' ## per salvare la password di ogni utente (usato per verificare l'esistenza di un utente e la correttezza della password)
-        self.numeri_telefono = 'phone_numbers' ## per salvare i numeri telefonici di ogni utente (usato per verificare l'esistenza di un numero di telefono)
+        self.utenti = 'users:passwords' ## per salvare la password di ogni utente (usato per verificare l'esistenza di un utente e la correttezza della password)
+        self.numeri_telefono = 'users:phone_numbers' ## per salvare i numeri telefonici di ogni utente (usato per verificare l'esistenza di un numero di telefono)
         self.utente_amici = lambda id_utente: f'user:{id_utente}:friends' ## per salvare gli utenti che fanno parte dei contatti
         self.utente_non_disturbare = lambda id_utente: f'user:{id_utente}:do_not_disturb' ## per salvare gli utenti che non vogliono ricevere notifiche
         self.conversazione = lambda id_utente1, id_utente2: f'chat:{sorted([id_utente1, id_utente2])[0]}:{sorted([id_utente1, id_utente2])[1]}' ## per salvare i messaggi di una chat
