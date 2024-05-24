@@ -60,7 +60,7 @@ class Manager:
                 exit(0)
             case _:
                 print('\nScelta non valida,')
-                input('Premi invio per continuare.')
+                input('Premi "invio" per continuare...')
     
     @schermata
     def non_disturbare(self):
@@ -84,7 +84,7 @@ class Manager:
             if decisione == "y":
                 self.db.set_non_disturbare(self.active_user, 'off')
 
-        input('\nPremi invio per continuare...')
+        input('\nPremi "invio" per continuare...')
 
     @schermata
     def menu_chat(self):
@@ -95,15 +95,20 @@ class Manager:
         # controllo esistenza di almeno un contatto
         if not contatti:
             print("Non hai ancora chat aperte. Aggiungi un contatto per iniziare una chat.")
-            input('Premi invio per continuare...')
+            input('Premi "invio" per continuare...')
             return
         
-        print("Se vuoi uscire in qualunque momento, inserisci 'q'")
+        print("Se vuoi uscire in qualunque momento, inserisci 'q'\n")
+        print("   n   |            nome              |    DnD    ")
+        print("---------------------------------------------------")
+
         
+        # stampa di indice, utente e stato dnd per ogni contatto
         for i, utente in enumerate(contatti):
-            print(f"{i+1}. chat con {utente}")
+            print(f"   {i+1}   "+f"|     {utente}"+" " * (25-len(utente))+("|     ●" if self.db.get_non_disturbare(utente) == "on" else "|     ○"))        
+            print("---------------------------------------------------")
         
-        scelta = input("\nInserisci l'indice della chat da aprire: ")
+        scelta = input("\Scelta: ")
 
         if scelta.lower() == "q":
             return
@@ -160,7 +165,7 @@ class Manager:
             non_disturbare = self.db.get_non_disturbare(contatto)
             if non_disturbare == 'on':
                 print('\nLa persona con cui stai provando a comunicare ha la modalità non disturbare attiva!')
-                input('Premi invio per continuare...')
+                input('Premi "invio" per continuare...')
             else:    
                 t = time.time()
                 # date = ":".join(str(datetime.fromtimestamp(t)).split(':')[:-1])
@@ -259,7 +264,7 @@ class Manager:
         self.active_user = nome_utente
 
         print(f'\nUtente "{nome_utente}" con numero di telefono "{numero_telefono}" registrato')
-        input("Premi invio per continuare...")
+        input('Premi "invio" per continuare...')
 
     @schermata
     def login(self):
@@ -288,11 +293,11 @@ class Manager:
         if output == password and output != None :
             self.active_user = nome_utente
             print("Login effettuato")
-            input("Premi 'invio' per continuare...")
+            input('Premi "invio" per continuare...')
             return
         
         print ("Nome utente o password errati, riprovare")
-        input("Premi 'invio' per continuare...")
+        input('Premi "invio" per continuare.')
         return
         
         
@@ -322,7 +327,7 @@ class Manager:
         # controlli sull'input
         if nome_utente_ricercato == "":
             print("Non hai inserito un utente valido.")
-            input("Premi invio per continuare...")
+            input('Premi "invio" per continuare.')
             return
 
         # scannerizzo la stringa inserita dall'utente
@@ -343,7 +348,7 @@ class Manager:
             # caso in cui non ci sono risultati
             case 0:
                 print("\nNessun risultato trovato")
-                input("Premi 'invio' per continuare...")
+                input('Premi "invio" per continuare.')
                 return
 
             # caso in cui c'è solo un risultato
@@ -383,7 +388,7 @@ class Manager:
         else: 
             print(f"\nUtente {key} aggiunto ai contatti.")
             
-        input("Premi 'invio' per continuare...")
+        input('Premi "invio" per continuare.')
 
     @schermata
     def rimuovi_contatto(self):
@@ -393,7 +398,7 @@ class Manager:
         amicizie = self.db.get_contatti(self.active_user)
         if not amicizie:
             print("Non hai contatti.")
-            input("Premi invio per continuare...")
+            input('Premi "invio" per continuare.')
             return
         
         print(f"I tuoi contatti sono:")
@@ -411,14 +416,14 @@ class Manager:
                 raise ValueError
         except ValueError:
             print('\nScelta non valida')
-            input('Premi invio per continuare...')
+            input('Premi "invio" per continuare.')
             return
 
         nome_utente = list(amicizie)[scelta - 1]
         self.db.del_contatto(self.active_user, nome_utente)
         
         print('Contatto rimosso con successo,')
-        input('Premi invio per continuare...')
+        input('Premi "invio" per continuare.')
 
     @schermata
     def mostra_contatti(self):
@@ -445,7 +450,7 @@ class Manager:
 2- Elimina contatto
 3- Visualizza contatti
 q- Torna al menù''')
-        scelta = input("\n:")
+        scelta = input("\nScelta:")
 
         match scelta:
             case "q":
