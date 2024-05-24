@@ -127,7 +127,7 @@ class Manager:
 
     @schermata
     def mostra_chat(self, contatto):
-                        
+            print ("   >>", contatto, "<<")          
             # estrazione dei messaggi dal db
             messaggi = self.db.get_conversazione(self.active_user, contatto)
             
