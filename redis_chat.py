@@ -4,6 +4,44 @@ from datetime import datetime
 from database import Database
 import time
 
+
+def schermata(f):
+    def wrapper(self, *args, **kwargs):
+        """Questa funzione pulisce il terminale e stampa delle informazioni:
+        - Utente attivo
+        - Notifiche ricevute (da aggiungere)"""
+        
+        if os.name == 'nt':
+            # Per Windows
+            os.system('cls')
+        else:
+            # Per Unix/Linux/macOS
+            os.system('clear')
+        
+        if self.active_user:
+            active_user_name = self.active_user if self.active_user is not None else "guest"
+            print("Utente attivo:", active_user_name, end='\n')
+
+            contatti = self.db.get_contatti(self.active_user)
+            nuovi_messaggi_da = []
+            for contatto in contatti:
+                ultimo_accesso = self.db.get_ultimo_accesso(self.active_user, contatto)
+                if not ultimo_accesso:
+                    continue
+
+                nuovi_messaggi = self.db.check_nuovi_messaggi(self.active_user, contatto, ultimo_accesso)
+                if nuovi_messaggi and len(nuovi_messaggi) > 0:
+                    nuovi_messaggi_da.append(contatto)
+
+            if nuovi_messaggi_da:
+                print(f'Hai nuovi messaggi da {", ".join(nuovi_messaggi_da)}')
+        else:
+            print("Nessun utente attivo.")
+
+        print()
+        return f(self, *args, **kwargs)
+    return wrapper
+
 class Manager:
     def __init__(
         self,
@@ -12,36 +50,8 @@ class Manager:
         self.db = Database(porta)
         self.active_user = None
 
-    def pulisci_cmd(self):
-        """Questa funzione pulisce il terminale e stampa delle informazioni:
-- Utente attivo
-- Notifiche ricevute (da aggiungere)"""
-        
-        if os.name == 'nt':
-            # Per Windows
-            os.system('cls')
-        else:
-            # Per Unix/Linux/macOS
-            os.system('clear')
-            
-        print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
-        
-        contatti = self.db.get_contatti(self.active_user)
-        nuovi_messaggi_da = []
-        for contatto in contatti:
-            ultimo_accesso = self.db.get_ultimo_accesso(self.active_user, contatto)
-            if not ultimo_accesso: continue
-            
-            nuovi_messaggi = self.db.check_nuovi_messaggi(self.active_user, contatto, ultimo_accesso)
-            if nuovi_messaggi and len(nuovi_messaggi) > 0:
-                nuovi_messaggi_da.append(contatto)
-        
-        if nuovi_messaggi_da:
-            print(f'Hai nuovi messaggi da {", ".join(nuovi_messaggi_da)}')
-        print()
-    
+    @schermata
     def menu_iniziale(self):
-        self.pulisci_cmd()
         
         ## LOGIN, CHAT E CONTATTI devono essere disonibili solo una volta avcer efettuto l'accesso
         print("""Scegli un'opzione:
@@ -76,11 +86,10 @@ class Manager:
                 print('\nScelta non valida,')
                 input('Premi "invio" per continuare...')
     
+    @schermata
     def non_disturbare(self):
         if self.active_user == None: return
-        
-        self.pulisci_cmd()
-            
+                    
         modalita = self.db.get_non_disturbare(self.active_user)
         if modalita == None or modalita == 'off':
             print("Modalità non disturbare disattivata")
@@ -99,8 +108,8 @@ class Manager:
 
         input('\nPremi "invio" per continuare...')
 
+    @schermata
     def menu_chat(self):
-        self.pulisci_cmd()
 
         contatti = self.db.get_contatti(self.active_user)
         
@@ -144,8 +153,8 @@ class Manager:
         contatto = list(contatti)[scelta-1]
         self.chat(contatto)
 
+    @schermata
     def mostra_chat(self, contatto):
-        self.pulisci_cmd()
         
         print (">> Chat con", contatto, "<<")          
         # estrazione dei messaggi dal db
@@ -194,8 +203,8 @@ class Manager:
                 nuovo_messaggio =  str(t) + ': ' + self.active_user + ': ' + nuovo_messaggio
                 self.db.update_conversazione(self.active_user, contatto, nuovo_messaggio, t)
 
+    @schermata
     def registrazione(self):
-        self.pulisci_cmd()
         
         print("Se vuoi uscire in qualunque momento, inserisci 'q'")
 
@@ -285,8 +294,8 @@ class Manager:
         print(f'\nUtente "{nome_utente}" con numero di telefono "{numero_telefono}" registrato')
         input('Premi "invio" per continuare...')
 
+    @schermata
     def login(self):
-        self.pulisci_cmd()
                 
         print("Se vuoi uscire in qualunque momento, inserisci 'q'")
 
@@ -316,9 +325,9 @@ class Manager:
         print ("Nome utente o password errati, riprovare")
         input('Premi "invio" per continuare.')
         return
-        
+    
+    @schermata
     def logout(self):
-        self.pulisci_cmd()
         
         if self.active_user != None:
 
@@ -326,9 +335,9 @@ class Manager:
 
             if decisione == "y":
                 self.active_user = None
-        
+    
+    @schermata
     def aggiungi_contatto(self):
-        self.pulisci_cmd()
         
         # inserimento da tastiera del nome da ricercare
         nome_utente_ricercato = input("Inserisci il nome utente del contatto da aggiungere: ")
@@ -399,8 +408,8 @@ class Manager:
             
         input('Premi "invio" per continuare.')
 
+    @schermata
     def rimuovi_contatto(self):
-        self.pulisci_cmd()
 
         amicizie = self.db.get_contatti(self.active_user)
         if not amicizie:
@@ -432,8 +441,8 @@ class Manager:
         print('Contatto rimosso con successo,')
         input('Premi "invio" per continuare.')
 
+    @schermata
     def mostra_contatti(self):
-        self.pulisci_cmd()
         
         contatti = self.db.get_contatti(self.active_user)
         if not contatti:
@@ -445,12 +454,11 @@ class Manager:
         
         input("\nPremi 'invio' per continuare...")
 
+    @schermata
     def contatti(self):
         if self.active_user == None:
             return
         
-        self.pulisci_cmd()
-
         print('''Scegli un'opzione: 
 1- Aggiungi contatto 
 2- Elimina contatto
