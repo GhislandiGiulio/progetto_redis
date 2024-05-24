@@ -4,18 +4,6 @@ from datetime import datetime
 from database import Database
 import time
 
-# wrapper per le differenti schermate
-def schermata(funzione):
-    def wrapper(*args, **kwargs):
-        if os.name == 'nt':
-            # Per Windows
-            os.system('cls')
-        else:
-            # Per Unix/Linux/macOS
-            os.system('clear')
-        return funzione(*args, **kwargs)
-    return wrapper
-
 class Manager:
     def __init__(
         self,
@@ -24,10 +12,23 @@ class Manager:
         self.db = Database(porta)
         self.active_user = None
 
-    @schermata
-    def menu_iniziale(self):
+    def pulisci_cmd(self):
+        """Questa funzione pulisce il terminale e stampa delle informazioni:
+- Utente attivo
+- Notifiche ricevute (da aggiungere)"""
+        
+        if os.name == 'nt':
+            # Per Windows
+            os.system('cls')
+        else:
+            # Per Unix/Linux/macOS
+            os.system('clear')
+            
         print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
         print()
+
+    def menu_iniziale(self):
+        self.pulisci_cmd()
         
         ## LOGIN, CHAT E CONTATTI devono essere disonibili solo una volta avcer efettuto l'accesso
         print("""Scegli un'opzione:
@@ -62,11 +63,10 @@ class Manager:
                 print('\nScelta non valida,')
                 input('Premi "invio" per continuare...')
     
-    @schermata
     def non_disturbare(self):
         if self.active_user == None: return
-        print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
-        print()
+        
+        self.pulisci_cmd()
             
         modalita = self.db.get_non_disturbare(self.active_user)
         if modalita == None or modalita == 'off':
@@ -86,10 +86,9 @@ class Manager:
 
         input('\nPremi "invio" per continuare...')
 
-    @schermata
     def menu_chat(self):
-        print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
-        print()
+        self.pulisci_cmd()
+
         contatti = self.db.get_contatti(self.active_user)
         
         # controllo esistenza di almeno un contatto
@@ -125,23 +124,24 @@ class Manager:
         contatto = list(contatti)[scelta-1]
         self.chat(contatto)
 
-    @schermata
     def mostra_chat(self, contatto):
-            print ("   >>", contatto, "<<")          
-            # estrazione dei messaggi dal db
-            messaggi = self.db.get_conversazione(self.active_user, contatto)
-            
-            # print nel caso in cui non ci siano ancora messaggi
-            if not messaggi: 
-                print('Sembra che al momento non siano presenti messaggi, manda un saluto al tuo contatto!')
-            
-            # print dei messaggi con timestamp
-            else:
-                for messaggio in messaggi:
-                    messagio_split = messaggio.split(':') 
-                    data = datetime.fromtimestamp(float(messagio_split[0]))
-                    messaggio = messagio_split[1].replace(self.active_user, 'Io') + ':' + "".join(messagio_split[2:])
-                    print(f'[{str(data).split(".")[0]}]{messaggio}')
+        self.pulisci_cmd()
+        
+        print ("   >>", contatto, "<<")          
+        # estrazione dei messaggi dal db
+        messaggi = self.db.get_conversazione(self.active_user, contatto)
+        
+        # print nel caso in cui non ci siano ancora messaggi
+        if not messaggi: 
+            print('Sembra che al momento non siano presenti messaggi, manda un saluto al tuo contatto!')
+        
+        # print dei messaggi con timestamp
+        else:
+            for messaggio in messaggi:
+                messagio_split = messaggio.split(':') 
+                data = datetime.fromtimestamp(float(messagio_split[0]))
+                messaggio = messagio_split[1].replace(self.active_user, 'Io') + ':' + "".join(messagio_split[2:])
+                print(f'[{str(data).split(".")[0]}]{messaggio}')
 
     def chat(self, contatto):
 
@@ -173,10 +173,8 @@ class Manager:
                 nuovo_messaggio =  str(t) + ': ' + self.active_user + ': ' + nuovo_messaggio
                 self.db.update_conversazione(self.active_user, contatto, nuovo_messaggio, t)
 
-    @schermata
     def registrazione(self):
-        print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
-        print()
+        self.pulisci_cmd()
         
         print("Se vuoi uscire in qualunque momento, inserisci 'q'")
 
@@ -266,11 +264,9 @@ class Manager:
         print(f'\nUtente "{nome_utente}" con numero di telefono "{numero_telefono}" registrato')
         input('Premi "invio" per continuare...')
 
-    @schermata
     def login(self):
-        print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
-        print()
-        
+        self.pulisci_cmd()
+                
         print("Se vuoi uscire in qualunque momento, inserisci 'q'")
 
         # inserimento del nome utente
@@ -300,13 +296,9 @@ class Manager:
         input('Premi "invio" per continuare.')
         return
         
-        
-
-    @schermata
     def logout(self):
-        print("Utente attivo:", self.active_user if self.active_user != None else "guest")
-        print()
-
+        self.pulisci_cmd()
+        
         if self.active_user != None:
 
             decisione = input("Sei sicuro di voler effettuare il logout?\ny=Sì\nn=No\n\n: ")
@@ -314,13 +306,9 @@ class Manager:
             if decisione == "y":
                 self.active_user = None
         
-    @schermata
     def aggiungi_contatto(self):
-        # TODO: l'utente non dovrebbe essere in grado di mandare la richiesta a se stesso
+        self.pulisci_cmd()
         
-        print("Utente attivo:", self.active_user if self.active_user != None else "guest")
-        print()
-
         # inserimento da tastiera del nome da ricercare
         nome_utente_ricercato = input("Inserisci il nome utente del contatto da aggiungere: ")
 
@@ -390,10 +378,8 @@ class Manager:
             
         input('Premi "invio" per continuare.')
 
-    @schermata
     def rimuovi_contatto(self):
-        print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
-        print()
+        self.pulisci_cmd()
 
         amicizie = self.db.get_contatti(self.active_user)
         if not amicizie:
@@ -425,8 +411,9 @@ class Manager:
         print('Contatto rimosso con successo,')
         input('Premi "invio" per continuare.')
 
-    @schermata
     def mostra_contatti(self):
+        self.pulisci_cmd()
+        
         contatti = self.db.get_contatti(self.active_user)
         if not contatti:
             print("\nNon hai contatti.")
@@ -437,13 +424,11 @@ class Manager:
         
         input("\nPremi 'invio' per continuare...")
 
-    @schermata
     def contatti(self):
-        print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
-        print()
-        
         if self.active_user == None:
             return
+        
+        self.pulisci_cmd()
 
         print('''Scegli un'opzione: 
 1- Aggiungi contatto 
