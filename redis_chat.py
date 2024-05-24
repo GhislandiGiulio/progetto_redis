@@ -105,9 +105,9 @@ class Manager:
         # stampa di indice, utente e stato dnd per ogni contatto
         for i, utente in enumerate(contatti):
             print(f"   {i+1}   "+f"|     {utente}"+" " * (25-len(utente))+("|     ●" if self.db.get_non_disturbare(utente) == "on" else "|     ○"))        
-            print("---------------------------------------------------")
+            # print("---------------------------------------------------")
         
-        scelta = input("\Scelta: ")
+        scelta = input("\nScelta: ")
 
         if scelta.lower() == "q":
             return
@@ -127,7 +127,7 @@ class Manager:
     def mostra_chat(self, contatto):
         self.pulisci_cmd()
         
-        print ("   >>", contatto, "<<")          
+        print (">> Chat con", contatto, "<<")          
         # estrazione dei messaggi dal db
         messaggi = self.db.get_conversazione(self.active_user, contatto)
         
