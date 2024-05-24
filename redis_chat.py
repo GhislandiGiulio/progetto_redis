@@ -125,8 +125,10 @@ class Manager:
             # print dei messaggi con timestamp
             else:
                 for messaggio in messaggi:
-                    data = datetime.fromtimestamp(float(messaggio.split(':')[0]))
-                    print(f'[{str(data).split(".")[0]}]{":".join(messaggio.split(":")[1:])}')
+                    messagio_split = messaggio.split(':') 
+                    data = datetime.fromtimestamp(float(messagio_split[0]))
+                    messaggio = messagio_split[1].replace(self.active_user, 'Io') + ':' + "".join(messagio_split[2:])
+                    print(f'[{str(data).split(".")[0]}]{messaggio}')
 
     def chat(self, contatto):
 
