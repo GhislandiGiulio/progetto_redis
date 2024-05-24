@@ -272,7 +272,7 @@ class Manager:
 
         if output == password and output != None :
             self.active_user = nome_utente
-            output("Login effettuato")
+            print("Login effettuato")
             input("Premi 'invio' per continuare...")
             return
         
