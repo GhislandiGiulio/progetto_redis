@@ -25,8 +25,17 @@ class Manager:
             os.system('clear')
             
         print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
+        
+        contatti = self.db.get_contatti(self.active_user)
+        for contatto in contatti:
+            ultimo_accesso = self.db.get_ultimo_accesso(self.active_user, contatto)
+            if not ultimo_accesso: continue
+            
+            nuovi_messaggi = self.db.check_nuovi_messaggi(self.active_user, contatto, ultimo_accesso)
+            if nuovi_messaggi and len(nuovi_messaggi) > 0:
+                print(f'Hai nuovi messaggi da {contatto} (n.{len(nuovi_messaggi)})')
         print()
-
+    
     def menu_iniziale(self):
         self.pulisci_cmd()
         
@@ -146,6 +155,7 @@ class Manager:
     def chat(self, contatto):
 
         while True:
+            self.db.set_ultimo_accesso(self.active_user, contatto)
 
             # stampa della chat
             self.mostra_chat(contatto)
