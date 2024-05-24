@@ -90,8 +90,16 @@ class Manager:
     def menu_chat(self):
         print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
         print()
-        print("Se vuoi uscire in qualunque momento, inserisci 'q'")
         contatti = self.db.get_contatti(self.active_user)
+        
+        # controllo esistenza di almeno un contatto
+        if not contatti:
+            print("Non hai ancora chat aperte. Aggiungi un contatto per iniziare una chat.")
+            input('Premi invio per continuare...')
+            return
+        
+        print("Se vuoi uscire in qualunque momento, inserisci 'q'")
+        
         for i, utente in enumerate(contatti):
             print(f"{i+1}. chat con {utente}")
         
