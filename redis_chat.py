@@ -107,13 +107,20 @@ class Manager:
             return
         
         print("Se vuoi uscire in qualunque momento, inserisci 'q'\n")
-        print("   n   |            nome              |    DnD    ")
-        print("---------------------------------------------------")
+        print("   n   |            nome              |    DnD    |  Nuovi mess.  ")
+        print("------------------------------------------------------------------")
 
         
         # stampa di indice, utente e stato dnd per ogni contatto
         for i, utente in enumerate(contatti):
-            print(f"   {i+1}   "+f"|     {utente}"+" " * (25-len(utente))+("|     ●" if self.db.get_non_disturbare(utente) == "on" else "|     ○"))        
+            
+            ## calcolo dei messaggi non letti
+            ultimo_accesso = self.db.get_ultimo_accesso(self.active_user, utente)
+            nuovi_messaggi = 0
+            if ultimo_accesso:
+                nuovi_messaggi = len(self.db.check_nuovi_messaggi(self.active_user, utente, ultimo_accesso))
+                    
+            print(f"   {i+1}   "+f"|     {utente}"+" " * (25-len(utente))+("|     ●     |" if self.db.get_non_disturbare(utente) == "on" else "|     ○     |")+f"     n.{nuovi_messaggi}")        
             # print("---------------------------------------------------")
         
         scelta = input("\nScelta: ")
