@@ -1,9 +1,9 @@
 Aggiungere notifiche real time (la chat si deve aggiornare quando riceviamo un mess)
 Secondo la consegna le chat devono usare > e < al posto dei nomi utenti (> se scriviamo e < se li riceviamo)
 Aggiungere le chat a tempo (si distrugge dopo un minuto)
-Aggiungere un messaggio d'errore per il login
-cambiare nome in fase di stampa da nome del valore nella database a "Io" per l'utente loggato
 aggiungere requisiti ulteriori password (min caratteri, min caratteri speciali, min numeri...)
+Mostrare se un utente nelle chat ha la dnd
+Aggiungere formattazione con colori
 
 
 OPZIONALE: aggiungere un counter delle notifiche nella schermata delle chat (in moso da sapere chi e quanto ci hanno scritto)
