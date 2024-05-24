@@ -1,4 +1,4 @@
-import redis
+import pwinput
 import os
 from datetime import datetime
 from database import Database
@@ -270,8 +270,9 @@ class Manager:
         # esci se l'utente inserisce "q"
         if nome_utente == "q":
             return
+        
         # inserimento della password
-        password = input("Inserisci la password: ")
+        password = pwinput.pwinput(prompt='Inserisci la password: ', mask='*')
 
         # esci se l'utente inserisce "q"
         if password == "q":
