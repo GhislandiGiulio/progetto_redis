@@ -5,7 +5,7 @@ from database import Database
 import time
 import msvcrt
 import threading
-
+import cursor
 
 def aggiorna_messaggi(active_user, contatto, db: Database, aggiorna: threading.Event, stop: threading.Event):
     while True:
@@ -63,7 +63,7 @@ class Manager:
     ):
         self.db = Database(porta)
         self.active_user = None
-        self.active_user = 'flavio'
+        # self.active_user = 'flavio'
         
     @schermata
     def menu_iniziale(self):
@@ -149,7 +149,6 @@ class Manager:
                 nuovi_messaggi = len(self.db.check_nuovi_messaggi(self.active_user, utente, ultimo_accesso))
                     
             print(f"   {i+1}   "+f"|     {utente}"+" " * (25-len(utente))+("|     ●     |" if self.db.get_non_disturbare(utente) == "on" else "|     ○     |")+f"     n.{nuovi_messaggi}")        
-            # print("---------------------------------------------------")
         
         scelta = input("\nScelta: ")
 
@@ -170,11 +169,11 @@ class Manager:
 
     @schermata
     def mostra_chat(self, contatto, nuovo_messaggio):
-        print ("\n>> Chat con", contatto, "<<")
+        print (">> Chat con", contatto, "<<")
         print('- Lascia vuoto per uscire')     
         print('- Inserisci LOAD_MORE per caricare altri messaggi')
              
-        print(f'\nScrivi: {nuovo_messaggio}\n')
+        print(f'\nScrivi: {nuovo_messaggio}⏴\n')
         
         # estrazione dei messaggi dal db
         messaggi = self.db.get_conversazione(self.active_user, contatto)
@@ -194,8 +193,14 @@ class Manager:
                         
     def chat(self, contatto):
         self.load_more = 1
+        
+        ## nasconde il cursore del terminale
+        print('\033[?25l', end="")
+
+        ## valori di shared memory utilizzati per aggiornare i messaggi e fermare l'esecuzione del thread
         aggiorna = threading.Event()
         stop = threading.Event()
+        
         thread = threading.Thread(target=aggiorna_messaggi, args=(self.active_user, contatto, self.db, aggiorna, stop,), daemon=True)
         thread.start()
 
@@ -206,14 +211,16 @@ class Manager:
             # stampa della chat
             self.mostra_chat(contatto, nuovo_messaggio)
 
-            # inserimento del messaggio
+            ## inserimento del messaggio
             while True:
                 if msvcrt.kbhit():
                     key = msvcrt.getch()
+                    ## se premiamo "enter" -> esci
                     if key == b'\r':
                         break
                     
                     try:
+                        ## se premiamo "cancel"/"delete" rimuoviamo l'ultima lettere del messaggio
                         if key == b'\x08': 
                             nuovo_messaggio = nuovo_messaggio[:-1]
                             
@@ -223,24 +230,28 @@ class Manager:
                         else:
                             raise Exception
                         
-                        # TODO: il cursore del terminale dovrebbe indicare alla linea dove viene stampato l'input dell utente
                         self.mostra_chat(contatto, nuovo_messaggio)
                         t = time.time()
                         
                     except: pass ## il carattere premuto non è decifrabile / non è valido
                     
+                ## se ci sono nuovi messaggi -> aggiorna la schermata
                 if aggiorna.is_set():
                     self.mostra_chat(contatto, nuovo_messaggio)
                     aggiorna.clear()
 
-                # if i % 50000 == 0: print(nuovo_messaggio)
-            
             # controllo messaggio vuoto per uscire
             if nuovo_messaggio == "":
                 break
                 
+            ## caricamento dei messaggi
+            ## essendo che la chat deve essere dall alto verso il basso con i messaggi più recenti in cima,
+            ## per evitare che ogni volta che aggiorniamo i messaggi o l'input dell'utente il terminale venga
+            ## spinto in fondo (a causa delle eccessive linee di messaggi)
+            ## ho preimpostato il numero di messaggi da mostrare a 50 per evitare questo problema
+            ## scrivendo LOAD_MORE nell'input aumentiamo questa cifra
+            ## in modo da poter visionare anche i messaggi più vecchi
             if nuovo_messaggio == "LOAD_MORE":
-                ## aumneta i messaggi da caricare
                 self.load_more += 1
                 continue
             
@@ -255,13 +266,13 @@ class Manager:
                 input('Premi "invio" per continuare...')
             else:    
                 t = time.time()
-                # date = ":".join(str(datetime.fromtimestamp(t)).split(':')[:-1])
-                
                 nuovo_messaggio =  str(t) + ': ' + self.active_user + ': ' + nuovo_messaggio
                 self.db.update_conversazione(self.active_user, contatto, nuovo_messaggio, t)
         
         stop.set()
         thread.join()
+        
+        print('\033[?25h', end="")
 
     @schermata
     def registrazione(self):
