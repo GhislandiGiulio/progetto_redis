@@ -10,8 +10,8 @@ import cursor
 def aggiorna_messaggi(active_user, contatto, db: Database, aggiorna: threading.Event, stop: threading.Event):
     while True:
         ultimo_accesso = db.get_ultimo_accesso(active_user, contatto)
-
         nuovi_messaggi = db.check_nuovi_messaggi(active_user, contatto, ultimo_accesso)
+        
         if nuovi_messaggi and len(nuovi_messaggi) > 0:
             aggiorna.set()
             db.set_ultimo_accesso(active_user, contatto)
@@ -193,6 +193,7 @@ class Manager:
                         
     def chat(self, contatto):
         self.load_more = 1
+        self.db.set_ultimo_accesso(self.active_user, contatto)
         
         ## nasconde il cursore del terminale
         print('\033[?25l', end="")
@@ -205,7 +206,6 @@ class Manager:
         thread.start()
 
         while True:
-            self.db.set_ultimo_accesso(self.active_user, contatto)
             nuovo_messaggio = ''
 
             # stampa della chat
