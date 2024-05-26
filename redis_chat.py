@@ -242,6 +242,7 @@ class Manager:
             if nuovo_messaggio == "LOAD_MORE":
                 ## aumneta i messaggi da caricare
                 self.load_more += 1
+                continue
             
             # disattivazione della DnD se l'utente che ce l'ha attiva invia un messaggio
             if self.db.get_non_disturbare(self.active_user) == "on":
