@@ -4,7 +4,19 @@ from datetime import datetime
 from database import Database
 import time
 import msvcrt
-import sys
+import threading
+
+
+def aggiorna_messaggi(active_user, contatto, db: Database, aggiorna: threading.Event, stop: threading.Event):
+    while True:
+        ultimo_accesso = db.get_ultimo_accesso(active_user, contatto)
+
+        nuovi_messaggi = db.check_nuovi_messaggi(active_user, contatto, ultimo_accesso)
+        if nuovi_messaggi and len(nuovi_messaggi) > 0:
+            aggiorna.set()
+            db.set_ultimo_accesso(active_user, contatto)
+
+        if stop.is_set(): return
 
 def schermata(f):
     def wrapper(*args, **kwargs):
@@ -22,7 +34,7 @@ def schermata(f):
         
         if self.active_user:
             active_user_name = self.active_user if self.active_user is not None else "guest"
-            print("Utente attivo:", active_user_name, end='\n')
+            print("Utente attivo:", active_user_name)
 
             contatti = self.db.get_contatti(self.active_user)
             nuovi_messaggi_da = []
@@ -40,6 +52,7 @@ def schermata(f):
         else:
             print("Nessun utente attivo.")
 
+        print()
         return f(*args, **kwargs)
     return wrapper
 
@@ -181,19 +194,20 @@ class Manager:
                         
     def chat(self, contatto):
         self.load_more = 1
+        aggiorna = threading.Event()
+        stop = threading.Event()
+        thread = threading.Thread(target=aggiorna_messaggi, args=(self.active_user, contatto, self.db, aggiorna, stop,), daemon=True)
+        thread.start()
 
         while True:
             self.db.set_ultimo_accesso(self.active_user, contatto)
-
             nuovo_messaggio = ''
-            
+
             # stampa della chat
             self.mostra_chat(contatto, nuovo_messaggio)
 
             # inserimento del messaggio
-            i = 0
             while True:
-                i += 1
                 if msvcrt.kbhit():
                     key = msvcrt.getch()
                     if key == b'\r':
@@ -208,13 +222,18 @@ class Manager:
                             nuovo_messaggio += key
                         else:
                             raise Exception
-                        self.mostra_chat(contatto, nuovo_messaggio)
+                        
                         # TODO: il cursore del terminale dovrebbe indicare alla linea dove viene stampato l'input dell utente
-                            
+                        self.mostra_chat(contatto, nuovo_messaggio)
+                        t = time.time()
+                        
                     except: pass ## il carattere premuto non è decifrabile / non è valido
-                time.sleep(0.01)
-                # if i % 50000 == 0: print(nuovo_messaggio)
+                    
+                if aggiorna.is_set():
+                    self.mostra_chat(contatto, nuovo_messaggio)
+                    aggiorna.clear()
 
+                # if i % 50000 == 0: print(nuovo_messaggio)
             
             # controllo messaggio vuoto per uscire
             if nuovo_messaggio == "":
@@ -239,6 +258,9 @@ class Manager:
                 
                 nuovo_messaggio =  str(t) + ': ' + self.active_user + ': ' + nuovo_messaggio
                 self.db.update_conversazione(self.active_user, contatto, nuovo_messaggio, t)
+        
+        stop.set()
+        thread.join()
 
     @schermata
     def registrazione(self):
