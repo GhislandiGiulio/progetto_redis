@@ -4,3 +4,4 @@ test.py
 git2
 gitesame
 __pycache__
+redis_chat_copy.py

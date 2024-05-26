@@ -3,13 +3,15 @@ import os
 from datetime import datetime
 from database import Database
 import time
-
+import msvcrt
+import sys
 
 def schermata(f):
-    def wrapper(self, *args, **kwargs):
+    def wrapper(*args, **kwargs):
         """Questa funzione pulisce il terminale e stampa delle informazioni:
         - Utente attivo
         - Notifiche ricevute (da aggiungere)"""
+        self = args[0]
         
         if os.name == 'nt':
             # Per Windows
@@ -38,8 +40,7 @@ def schermata(f):
         else:
             print("Nessun utente attivo.")
 
-        print()
-        return f(self, *args, **kwargs)
+        return f(*args, **kwargs)
     return wrapper
 
 class Manager:
@@ -49,7 +50,8 @@ class Manager:
     ):
         self.db = Database(porta)
         self.active_user = None
-
+        self.active_user = 'flavio'
+        
     @schermata
     def menu_iniziale(self):
         
@@ -154,11 +156,16 @@ class Manager:
         self.chat(contatto)
 
     @schermata
-    def mostra_chat(self, contatto):
+    def mostra_chat(self, contatto, nuovo_messaggio):
+        print ("\n>> Chat con", contatto, "<<")
+        print('- Lascia vuoto per uscire')     
+        print('- Inserisci LOAD_MORE per caricare altri messaggi')
+             
+        print(f'\nScrivi: {nuovo_messaggio}\n')
         
-        print (">> Chat con", contatto, "<<")          
         # estrazione dei messaggi dal db
         messaggi = self.db.get_conversazione(self.active_user, contatto)
+        messaggi = messaggi[0:25*self.load_more]
         
         # print nel caso in cui non ci siano ancora messaggi
         if not messaggi: 
@@ -171,21 +178,51 @@ class Manager:
                 data = datetime.fromtimestamp(float(messagio_split[0]))
                 messaggio = messagio_split[1].replace(self.active_user, 'Io') + ':' + "".join(messagio_split[2:])
                 print(f'[{str(data).split(".")[0]}]{messaggio}')
-
+                        
     def chat(self, contatto):
+        self.load_more = 1
 
         while True:
             self.db.set_ultimo_accesso(self.active_user, contatto)
 
+            nuovo_messaggio = ''
+            
             # stampa della chat
-            self.mostra_chat(contatto)
+            self.mostra_chat(contatto, nuovo_messaggio)
 
             # inserimento del messaggio
-            nuovo_messaggio = input('\nScrivi (lascia vuoto per uscire): ')
+            i = 0
+            while True:
+                i += 1
+                if msvcrt.kbhit():
+                    key = msvcrt.getch()
+                    if key == b'\r':
+                        break
+                    
+                    try:
+                        if key == b'\x08': 
+                            nuovo_messaggio = nuovo_messaggio[:-1]
+                            
+                        elif len(key) == 1: 
+                            key = key.decode()
+                            nuovo_messaggio += key
+                        else:
+                            raise Exception
+                        self.mostra_chat(contatto, nuovo_messaggio)
+                        # TODO: il cursore del terminale dovrebbe indicare alla linea dove viene stampato l'input dell utente
+                            
+                    except: pass ## il carattere premuto non è decifrabile / non è valido
+                time.sleep(0.01)
+                # if i % 50000 == 0: print(nuovo_messaggio)
 
+            
             # controllo messaggio vuoto per uscire
             if nuovo_messaggio == "":
                 break
+                
+            if nuovo_messaggio == "LOAD_MORE":
+                ## aumneta i messaggi da caricare
+                self.load_more += 1
             
             # disattivazione della DnD se l'utente che ce l'ha attiva invia un messaggio
             if self.db.get_non_disturbare(self.active_user) == "on":

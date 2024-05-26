@@ -96,7 +96,12 @@ Ritorna None se esso non esiste"""
     
     def get_conversazione(self, utente, contatto):
         """Ritorna tutti i messaggi di una chat"""
-        return self.redis.zrange(self.chiavi.conversazione(utente, contatto), 0, -1)
+        return self.redis.zrange(
+            self.chiavi.conversazione(utente, contatto), 
+            0, 
+            -1, 
+            desc=True
+        )
 
     def update_conversazione(self, utente, contatto, messaggio, score):
         """Aggiunge un messaggio alla chat"""
