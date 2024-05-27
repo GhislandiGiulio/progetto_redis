@@ -147,10 +147,11 @@ class Manager:
 
     def chat(self, contatto):
 
+        # funzione da eseguire quando si riceve un messaggio dal contatto
         def azioni_ricezione(_):
             self.mostra_chat(contatto)
         
-            
+        # creazione del thread a partire dalla connessione pubsub al canale della chat
         pubsub = self.db.get_pubsub(self.active_user, contatto, azioni_ricezione)
         pubsub_thread = pubsub.run_in_thread(sleep_time=10)
 
@@ -164,6 +165,8 @@ class Manager:
 
             # controllo messaggio vuoto per uscire
             if nuovo_messaggio == "":
+
+                # terminazione del thread di ricezione messaggi
                 pubsub_thread.stop()
                 break
             
@@ -183,8 +186,6 @@ class Manager:
                 self.db.update_conversazione(self.active_user, contatto, nuovo_messaggio, t)
                 self.db.notify_channel(self.active_user, contatto)
             
-
-
     @schermata
     def registrazione(self):
         print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
