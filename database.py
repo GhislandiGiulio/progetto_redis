@@ -7,10 +7,14 @@ class Database:
         self,
         porta: str
     ):
+
         self.redis = redis.Redis(
-            port=porta,
-            decode_responses=True
-        )
+                    host='redis-19533.c250.eu-central-1-1.ec2.redns.redis-cloud.com',
+                    port=19533,
+                    username="giulio",
+                    password="Rxa3LdM4Wa3Li7d#",
+                    decode_responses=True
+                    )
         
         self.chiavi = Chiavi()
         

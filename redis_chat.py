@@ -153,7 +153,7 @@ class Manager:
         
         # creazione del thread a partire dalla connessione pubsub al canale della chat
         pubsub = self.db.get_pubsub(self.active_user, contatto, azioni_ricezione)
-        pubsub_thread = pubsub.run_in_thread(sleep_time=10)
+        pubsub_thread = pubsub.run_in_thread(sleep_time=0.1)
 
         while True:
 
