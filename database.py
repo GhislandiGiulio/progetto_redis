@@ -110,6 +110,18 @@ Ritorna None se esso non esiste"""
             {utente: score}
         )
         
+    def get_pubsub(self, utente, contatto, funzione):
+        
+        pubsub = self.redis.pubsub()
+        pubsub.psubscribe(**{self.chiavi.canale(utente, contatto): funzione})
+
+        return pubsub
+    
+    def notify_channel(self, utente, contatto):
+
+        print("asdas")
+        self.redis.publish(self.chiavi.canale(contatto, utente), "")
+
 class Chiavi:
     def __init__(self):
         self.utenti = 'users:passwords' ## per salvare la password di ogni utente (usato per verificare l'esistenza di un utente e la correttezza della password)
@@ -117,3 +129,4 @@ class Chiavi:
         self.utente_amici = lambda id_utente: f'user:{id_utente}:friends' ## per salvare gli utenti che fanno parte dei contatti
         self.utente_non_disturbare = lambda id_utente: f'user:{id_utente}:do_not_disturb' ## per salvare gli utenti che non vogliono ricevere notifiche
         self.conversazione = lambda id_utente1, id_utente2: f'chat:{sorted([id_utente1, id_utente2])[0]}:{sorted([id_utente1, id_utente2])[1]}' ## per salvare i messaggi di una chat
+        self.canale = lambda id_utente1, id_utente2: f'channel:{id_utente1}:{id_utente2}'

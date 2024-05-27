@@ -143,7 +143,16 @@ class Manager:
                     messaggio = messagio_split[1].replace(self.active_user, 'Io') + ':' + "".join(messagio_split[2:])
                     print(f'[{str(data).split(".")[0]}]{messaggio}')
 
+            print("\nScrivi (lascia vuoto per uscire): ", end="")
+
     def chat(self, contatto):
+
+        def azioni_ricezione(_):
+            self.mostra_chat(contatto)
+        
+            
+        pubsub = self.db.get_pubsub(self.active_user, contatto, azioni_ricezione)
+        pubsub_thread = pubsub.run_in_thread(sleep_time=0.1)
 
         while True:
 
@@ -151,10 +160,11 @@ class Manager:
             self.mostra_chat(contatto)
 
             # inserimento del messaggio
-            nuovo_messaggio = input('\nScrivi (lascia vuoto per uscire): ')
+            nuovo_messaggio = input("")
 
             # controllo messaggio vuoto per uscire
             if nuovo_messaggio == "":
+                pubsub_thread.stop()
                 break
             
             # disattivazione della DnD se l'utente che ce l'ha attiva invia un messaggio
@@ -168,10 +178,12 @@ class Manager:
                 input('Premi "invio" per continuare...')
             else:    
                 t = time.time()
-                # date = ":".join(str(datetime.fromtimestamp(t)).split(':')[:-1])
                 
                 nuovo_messaggio =  str(t) + ': ' + self.active_user + ': ' + nuovo_messaggio
                 self.db.update_conversazione(self.active_user, contatto, nuovo_messaggio, t)
+                self.db.notify_channel(self.active_user, contatto)
+            
+
 
     @schermata
     def registrazione(self):
@@ -300,8 +312,6 @@ class Manager:
         input('Premi "invio" per continuare.')
         return
         
-        
-
     @schermata
     def logout(self):
         print("Utente attivo:", self.active_user if self.active_user != None else "guest")
