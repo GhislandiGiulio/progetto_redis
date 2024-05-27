@@ -138,9 +138,9 @@ class Manager:
             # print dei messaggi con timestamp
             else:
                 for messaggio in messaggi:
-                    messagio_split = messaggio.split(':') 
+                    messagio_split = messaggio.split(':', maxsplit=2) 
                     data = datetime.fromtimestamp(float(messagio_split[0]))
-                    messaggio = messagio_split[1].replace(self.active_user, 'Io') + ':' + "".join(messagio_split[2:])
+                    messaggio = messagio_split[1].replace(self.active_user, 'Io') + ':' + "".join(messagio_split[2])
                     print(f'[{str(data).split(".")[0]}]{messaggio}')
 
             print("\nScrivi (lascia vuoto per uscire): ", end="")
@@ -152,7 +152,7 @@ class Manager:
         
             
         pubsub = self.db.get_pubsub(self.active_user, contatto, azioni_ricezione)
-        pubsub_thread = pubsub.run_in_thread(sleep_time=0.1)
+        pubsub_thread = pubsub.run_in_thread(sleep_time=10)
 
         while True:
 
