@@ -7,10 +7,14 @@ class Database:
         self,
         porta: str
     ):
+
         self.redis = redis.Redis(
-            port=porta,
-            decode_responses=True
-        )
+                    host='redis-19533.c250.eu-central-1-1.ec2.redns.redis-cloud.com',
+                    port=19533,
+                    username="giulio",
+                    password="Rxa3LdM4Wa3Li7d#",
+                    decode_responses=True
+                    )
         
         self.chiavi = Chiavi()
         
@@ -109,6 +113,19 @@ Ritorna None se esso non esiste"""
             self.chiavi.utente_amici(contatto),
             {utente: score}
         )
+        
+    def get_pubsub(self, utente, contatto, funzione):
+        
+        pubsub = self.redis.pubsub()
+        pubsub.psubscribe(**{self.chiavi.canale(utente, contatto): funzione})
+
+        return pubsub
+    
+    def notify_channel(self, utente, contatto):
+
+        print("asdas")
+        self.redis.publish(self.chiavi.canale(contatto, utente), "")
+
     
     def set_ultimo_accesso(self, utente, contatto):
         """Aggiorna l'ultimo accesso di un utente ad una determinata chat"""
@@ -137,3 +154,4 @@ class Chiavi:
         self.utente_non_disturbare = lambda id_utente: f'user:{id_utente}:do_not_disturb' ## per salvare gli utenti che non vogliono ricevere notifiche
         self.utente_ultimo_accesso_chat = lambda id_utente, contatto: f'user:{id_utente}:last_acces_to_chat:{sorted([id_utente, contatto])[0]}:{sorted([id_utente, contatto])[1]}'
         self.conversazione = lambda id_utente1, id_utente2: f'chat:{sorted([id_utente1, id_utente2])[0]}:{sorted([id_utente1, id_utente2])[1]}' ## per salvare i messaggi di una chat
+        self.canale = lambda id_utente1, id_utente2: f'channel:{id_utente1}:{id_utente2}'

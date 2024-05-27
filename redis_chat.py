@@ -172,7 +172,17 @@ class Manager:
                 messaggio = messagio_split[1].replace(self.active_user, 'Io') + ':' + "".join(messagio_split[2:])
                 print(f'[{str(data).split(".")[0]}]{messaggio}')
 
+            print("\nScrivi (lascia vuoto per uscire): ", end="")
+
     def chat(self, contatto):
+
+        # funzione da eseguire quando si riceve un messaggio dal contatto
+        def azioni_ricezione(_):
+            self.mostra_chat(contatto)
+        
+        # creazione del thread a partire dalla connessione pubsub al canale della chat
+        pubsub = self.db.get_pubsub(self.active_user, contatto, azioni_ricezione)
+        pubsub_thread = pubsub.run_in_thread(sleep_time=0.1)
 
         while True:
             self.db.set_ultimo_accesso(self.active_user, contatto)
@@ -181,10 +191,13 @@ class Manager:
             self.mostra_chat(contatto)
 
             # inserimento del messaggio
-            nuovo_messaggio = input('\nScrivi (lascia vuoto per uscire): ')
+            nuovo_messaggio = input("")
 
             # controllo messaggio vuoto per uscire
             if nuovo_messaggio == "":
+
+                # terminazione del thread di ricezione messaggi
+                pubsub_thread.stop()
                 break
             
             # disattivazione della DnD se l'utente che ce l'ha attiva invia un messaggio
@@ -198,11 +211,11 @@ class Manager:
                 input('Premi "invio" per continuare...')
             else:    
                 t = time.time()
-                # date = ":".join(str(datetime.fromtimestamp(t)).split(':')[:-1])
                 
                 nuovo_messaggio =  str(t) + ': ' + self.active_user + ': ' + nuovo_messaggio
                 self.db.update_conversazione(self.active_user, contatto, nuovo_messaggio, t)
-
+                self.db.notify_channel(self.active_user, contatto)
+            
     @schermata
     def registrazione(self):
         
