@@ -20,21 +20,11 @@ def schermata(f):
         
         if self.active_user:
             active_user_name = self.active_user if self.active_user is not None else "guest"
-            print("Utente attivo:", active_user_name, end='\n')
 
-            contatti = self.db.get_contatti(self.active_user)
-            nuovi_messaggi_da = []
-            for contatto in contatti:
-                ultimo_accesso = self.db.get_ultimo_accesso(self.active_user, contatto)
-                if not ultimo_accesso:
-                    continue
+            print("\nUtente attivo:", active_user_name, end='\n')
 
-                nuovi_messaggi = self.db.check_nuovi_messaggi(self.active_user, contatto, ultimo_accesso)
-                if nuovi_messaggi and len(nuovi_messaggi) > 0:
-                    nuovi_messaggi_da.append(contatto)
+            self.gestisci_notifiche()
 
-            if nuovi_messaggi_da:
-                print(f'Hai nuovi messaggi da {", ".join(nuovi_messaggi_da)}')
         else:
             print("Nessun utente attivo.")
 
@@ -49,6 +39,45 @@ class Manager:
     ):
         self.db = Database(porta)
         self.active_user = None
+
+        # thread per le notifiche viene inizializzato quando viene fatto il login
+        self.notification_agent_thread = None
+        
+        # inzializzazione e controllo presenza di notifiche
+        self.notifiche_da = []
+
+
+    def gestisci_notifiche(self, messaggio=None):
+        
+        def mostra_notifica(lista_contatti):
+
+            # memorizzazione posizione cursore
+            print("\033[s", end='')
+
+            # spostamento del cursore in alto a sinistra
+            print("\033[1;1H", end='')
+
+            # stampa della notifica
+            print("Hai delle nuove notifiche da: " if lista_contatti != [] else "", end="")
+
+            [print(contatto + ", " if len(lista_contatti) > 1 else contatto, end="") for contatto in lista_contatti]
+
+            # ritorno cursore alla posizione memorizzata prima
+            print("\033[u", end='')
+
+        if messaggio is None:
+            mostra_notifica(self.notifiche_da)
+            return
+        
+        contatto = messaggio["data"]    
+
+        if contatto not in self.notifiche_da:    
+            self.notifiche_da.append(contatto)
+
+        if self.notifiche_da != []:
+            mostra_notifica(self.notifiche_da)
+
+        
 
     @schermata
     def menu_iniziale(self):
@@ -81,6 +110,7 @@ class Manager:
             case "6":
                 self.non_disturbare()
             case "q":
+                self.notification_agent_thread.stop()
                 exit(0)
             case _:
                 print('\nScelta non valida,')
@@ -162,7 +192,8 @@ class Manager:
         
         # print nel caso in cui non ci siano ancora messaggi
         if not messaggi: 
-            print('Sembra che al momento non siano presenti messaggi, manda un saluto al tuo contatto!')
+            print('Sembra che al momento non siano presenti messaggi, manda un saluto al tuo contatto!')            
+            print("\nScrivi (lascia vuoto per uscire): ", end="")
         
         # print dei messaggi con timestamp
         else:
@@ -174,18 +205,51 @@ class Manager:
 
             print("\nScrivi (lascia vuoto per uscire): ", end="")
 
+    def controlla_nuovi_messaggi(self):
+
+        # estrazione di tutti i contatti dell'utente loggato
+        contatti = self.db.get_contatti(self.active_user)
+
+        # inizializzazione della lista di notifiche
+        notifiche_da = []
+
+        for contatto in contatti:
+            ultimo_accesso = self.db.get_ultimo_accesso(self.active_user, contatto)
+            if not ultimo_accesso:
+                continue
+
+            nuovi_messaggi = self.db.check_nuovi_messaggi(self.active_user, contatto, ultimo_accesso)
+            if nuovi_messaggi and len(nuovi_messaggi) > 0:
+                notifiche_da.append(contatto)
+
+        return notifiche_da
+
     def chat(self, contatto):
 
         # funzione da eseguire quando si riceve un messaggio dal contatto
         def azioni_ricezione(_):
+
+            # ricarica chat
             self.mostra_chat(contatto)
-        
+
+            # aggiornamento dell'accesso alla chat
+            self.db.set_ultimo_accesso(self.active_user, contatto)
+
+            # aggiornamento lista notifiche
+            self.notifiche_da = self.controlla_nuovi_messaggi()
+
+
         # creazione del thread a partire dalla connessione pubsub al canale della chat
-        pubsub = self.db.get_pubsub(self.active_user, contatto, azioni_ricezione)
-        pubsub_thread = pubsub.run_in_thread(sleep_time=0.1)
+        pubsub = self.db.get_pubsub(self.active_user, azioni_ricezione, contatto)
+        pubsub_thread = pubsub.run_in_thread(sleep_time=10)
 
         while True:
+
+            # aggiornamento dell'accesso alla chat
             self.db.set_ultimo_accesso(self.active_user, contatto)
+
+            # aggiornamento lista notifiche
+            self.notifiche_da = self.controlla_nuovi_messaggi()
 
             # stampa della chat
             self.mostra_chat(contatto)
@@ -214,7 +278,12 @@ class Manager:
                 
                 nuovo_messaggio =  str(t) + ': ' + self.active_user + ': ' + nuovo_messaggio
                 self.db.update_conversazione(self.active_user, contatto, nuovo_messaggio, t)
-                self.db.notify_channel(self.active_user, contatto)
+
+                # publish per aggiornare la chat live
+                self.db.notify_channel(contatto, self.active_user)
+
+                # publish per inviare notifica
+                self.db.notify_channel(contatto, message=self.active_user)
             
     @schermata
     def registrazione(self):
@@ -331,6 +400,14 @@ class Manager:
 
         if output == password and output != None :
             self.active_user = nome_utente
+            
+            # creazione del thread per ricevere le notifiche
+            notification_agent = self.db.get_pubsub(self.active_user, self.gestisci_notifiche)
+            self.notification_agent_thread = notification_agent.run_in_thread(sleep_time=10)
+
+            # controllo di esistenza di nuove notifiche
+            self.notifiche_da = self.controlla_nuovi_messaggi()
+
             print("Login effettuato")
             input('Premi "invio" per continuare...')
             return

@@ -114,18 +114,16 @@ Ritorna None se esso non esiste"""
             {utente: score}
         )
         
-    def get_pubsub(self, utente, contatto, funzione):
-        
+    def get_pubsub(self, utente, funzione, contatto=None):
+
         pubsub = self.redis.pubsub()
         pubsub.psubscribe(**{self.chiavi.canale(utente, contatto): funzione})
 
         return pubsub
     
-    def notify_channel(self, utente, contatto):
+    def notify_channel(self, contatto, utente=None, message=""):
 
-        print("asdas")
-        self.redis.publish(self.chiavi.canale(contatto, utente), "")
-
+        self.redis.publish(self.chiavi.canale(contatto, utente), message)
     
     def set_ultimo_accesso(self, utente, contatto):
         """Aggiorna l'ultimo accesso di un utente ad una determinata chat"""
