@@ -96,25 +96,41 @@ class Manager:
         
         scelta = input("\nScelta: ")
 
-        match scelta:
-            case "1":
-                self.registrazione()
-            case "2":
-                self.login()
-            case "3":
-                self.logout()
-            case "4":
-                self.menu_chat()
-            case "5":
-                self.contatti()
-            case "6":
-                self.non_disturbare()
-            case "q":
-                self.notification_agent_thread.stop()
-                exit(0)
-            case _:
-                print('\nScelta non valida,')
-                input('Premi "invio" per continuare...')
+        if self.active_user != None:
+            match scelta:
+                case "1":
+                    self.registrazione()
+                case "2":
+                    self.login()
+                case "3":
+                    self.logout()
+                case "4":
+                    self.menu_chat()
+                case "5":
+                    self.contatti()
+                case "6":
+                    self.non_disturbare()
+                case "q":
+                    self.notification_agent_thread.stop()
+                    exit(0)
+                case _:
+                    print('\nScelta non valida,')
+                    input('Premi "invio" per continuare...')
+            return
+
+        if self.active_user == None:
+            match scelta:
+                case "1":
+                    self.registrazione()
+                case "2":
+                    self.login()
+                case "q":
+                    self.notification_agent_thread.stop()
+                    exit(0)
+                case _:
+                    print('\nScelta non valida,')
+                    input('Premi "invio" per continuare...')
+            return
     
     @schermata
     def non_disturbare(self):
@@ -241,7 +257,7 @@ class Manager:
 
         # creazione del thread a partire dalla connessione pubsub al canale della chat
         pubsub = self.db.get_pubsub(self.active_user, azioni_ricezione, contatto)
-        pubsub_thread = pubsub.run_in_thread(sleep_time=10)
+        pubsub_thread = pubsub.run_in_thread(sleep_time=0.1)
 
         while True:
 
@@ -371,9 +387,8 @@ class Manager:
         # aggiunta delle chiavi all'hashmap Redis
         self.db.set_utente(nome_utente, password)
         self.db.set_numero_telefono(nome_utente, numero_telefono)
-        self.active_user = nome_utente
 
-        print(f'\nUtente "{nome_utente}" con numero di telefono "{numero_telefono}" registrato')
+        print(f'\nUtente "{nome_utente}" con numero di telefono "{numero_telefono}" registrato. Per cominciare a chattare esegui il login.')
         input('Premi "invio" per continuare...')
 
     @schermata
@@ -399,11 +414,19 @@ class Manager:
         output = self.db.get_pass_utente(nome_utente)
 
         if output == password and output != None :
-            self.active_user = nome_utente
+
+            # arresto del vecchio thread per ricevere le notifiche
+            if self.active_user != None:
+                self.notification_agent_thread.stop()
             
-            # creazione del thread per ricevere le notifiche
+            # impostazione del nuovo utente
+            self.active_user = nome_utente
+
+             # creazione del thread per ricevere le notifiche
             notification_agent = self.db.get_pubsub(self.active_user, self.gestisci_notifiche)
-            self.notification_agent_thread = notification_agent.run_in_thread(sleep_time=10)
+
+            # ricreazione del thread per ricevere le notifiche
+            self.notification_agent_thread = notification_agent.run_in_thread(sleep_time=0.1)
 
             # controllo di esistenza di nuove notifiche
             self.notifiche_da = self.controlla_nuovi_messaggi()
@@ -419,12 +442,14 @@ class Manager:
     @schermata
     def logout(self):
         
-        if self.active_user != None:
+        decisione = input("Sei sicuro di voler effettuare il logout?\ny=Sì\nn=No\n\n: ")
 
-            decisione = input("Sei sicuro di voler effettuare il logout?\ny=Sì\nn=No\n\n: ")
+        if decisione == "y":
+            # arresto del thread delle notifiche
+            self.notification_agent_thread.stop()
 
-            if decisione == "y":
-                self.active_user = None
+            # rimozione dell'utente attivo
+            self.active_user = None
     
     @schermata
     def aggiungi_contatto(self):
