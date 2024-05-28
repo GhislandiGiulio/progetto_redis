@@ -4,16 +4,32 @@ from datetime import datetime
 from database import Database
 import time
 
-# wrapper per le differenti schermate
-def schermata(funzione):
-    def wrapper(*args, **kwargs):
+
+def schermata(f):
+    def wrapper(self, *args, **kwargs):
+        """Questa funzione pulisce il terminale e stampa delle informazioni:
+        - Utente attivo
+        - Notifiche ricevute (da aggiungere)"""
+        
         if os.name == 'nt':
             # Per Windows
             os.system('cls')
         else:
             # Per Unix/Linux/macOS
             os.system('clear')
-        return funzione(*args, **kwargs)
+        
+        if self.active_user:
+            active_user_name = self.active_user if self.active_user is not None else "guest"
+
+            print("\nUtente attivo:", active_user_name, end='\n')
+
+            self.gestisci_notifiche()
+
+        else:
+            print("Nessun utente attivo.")
+
+        print()
+        return f(self, *args, **kwargs)
     return wrapper
 
 class Manager:
@@ -24,10 +40,47 @@ class Manager:
         self.db = Database(porta)
         self.active_user = None
 
+        # thread per le notifiche viene inizializzato quando viene fatto il login
+        self.notification_agent_thread = None
+        
+        # inzializzazione e controllo presenza di notifiche
+        self.notifiche_da = []
+
+
+    def gestisci_notifiche(self, messaggio=None):
+        
+        def mostra_notifica(lista_contatti):
+
+            # memorizzazione posizione cursore
+            print("\033[s", end='')
+
+            # spostamento del cursore in alto a sinistra
+            print("\033[1;1H", end='')
+
+            # stampa della notifica
+            print("Hai delle nuove notifiche da: " if lista_contatti != [] else "", end="")
+
+            [print(contatto + ", " if len(lista_contatti) > 1 else contatto, end="") for contatto in lista_contatti]
+
+            # ritorno cursore alla posizione memorizzata prima
+            print("\033[u", end='')
+
+        if messaggio is None:
+            mostra_notifica(self.notifiche_da)
+            return
+        
+        contatto = messaggio["data"]    
+
+        if contatto not in self.notifiche_da:    
+            self.notifiche_da.append(contatto)
+
+        if self.notifiche_da != []:
+            mostra_notifica(self.notifiche_da)
+
+        
+
     @schermata
     def menu_iniziale(self):
-        print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
-        print()
         
         ## LOGIN, CHAT E CONTATTI devono essere disonibili solo una volta avcer efettuto l'accesso
         print("""Scegli un'opzione:
@@ -43,31 +96,46 @@ class Manager:
         
         scelta = input("\nScelta: ")
 
-        match scelta:
-            case "1":
-                self.registrazione()
-            case "2":
-                self.login()
-            case "3":
-                self.logout()
-            case "4":
-                self.menu_chat()
-            case "5":
-                self.contatti()
-            case "6":
-                self.non_disturbare()
-            case "q":
-                exit(0)
-            case _:
-                print('\nScelta non valida,')
-                input('Premi "invio" per continuare...')
+        if self.active_user != None:
+            match scelta:
+                case "1":
+                    self.registrazione()
+                case "2":
+                    self.login()
+                case "3":
+                    self.logout()
+                case "4":
+                    self.menu_chat()
+                case "5":
+                    self.contatti()
+                case "6":
+                    self.non_disturbare()
+                case "q":
+                    self.notification_agent_thread.stop()
+                    exit(0)
+                case _:
+                    print('\nScelta non valida,')
+                    input('Premi "invio" per continuare...')
+            return
+
+        if self.active_user == None:
+            match scelta:
+                case "1":
+                    self.registrazione()
+                case "2":
+                    self.login()
+                case "q":
+                    self.notification_agent_thread.stop()
+                    exit(0)
+                case _:
+                    print('\nScelta non valida,')
+                    input('Premi "invio" per continuare...')
+            return
     
     @schermata
     def non_disturbare(self):
         if self.active_user == None: return
-        print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
-        print()
-            
+                    
         modalita = self.db.get_non_disturbare(self.active_user)
         if modalita == None or modalita == 'off':
             print("Modalità non disturbare disattivata")
@@ -88,8 +156,7 @@ class Manager:
 
     @schermata
     def menu_chat(self):
-        print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
-        print()
+
         contatti = self.db.get_contatti(self.active_user)
         
         # controllo esistenza di almeno un contatto
@@ -99,16 +166,23 @@ class Manager:
             return
         
         print("Se vuoi uscire in qualunque momento, inserisci 'q'\n")
-        print("   n   |            nome              |    DnD    ")
-        print("---------------------------------------------------")
+        print("   n   |            nome              |    DnD    |  Nuovi mess.  ")
+        print("------------------------------------------------------------------")
 
         
         # stampa di indice, utente e stato dnd per ogni contatto
         for i, utente in enumerate(contatti):
-            print(f"   {i+1}   "+f"|     {utente}"+" " * (25-len(utente))+("|     ●" if self.db.get_non_disturbare(utente) == "on" else "|     ○"))        
-            print("---------------------------------------------------")
+            
+            ## calcolo dei messaggi non letti
+            ultimo_accesso = self.db.get_ultimo_accesso(self.active_user, utente)
+            nuovi_messaggi = 0
+            if ultimo_accesso:
+                nuovi_messaggi = len(self.db.check_nuovi_messaggi(self.active_user, utente, ultimo_accesso))
+                    
+            print(f"   {i+1}   "+f"|     {utente}"+" " * (25-len(utente))+("|     ●     |" if self.db.get_non_disturbare(utente) == "on" else "|     ○     |")+f"     n.{nuovi_messaggi}")        
+            # print("---------------------------------------------------")
         
-        scelta = input("\Scelta: ")
+        scelta = input("\nScelta: ")
 
         if scelta.lower() == "q":
             return
@@ -127,34 +201,83 @@ class Manager:
 
     @schermata
     def mostra_chat(self, contatto):
-            print ("   >>", contatto, "<<")          
-            # estrazione dei messaggi dal db
-            messaggi = self.db.get_conversazione(self.active_user, contatto)
-            
-            # print nel caso in cui non ci siano ancora messaggi
-            if not messaggi: 
-                print('Sembra che al momento non siano presenti messaggi, manda un saluto al tuo contatto!')
-            
-            # print dei messaggi con timestamp
-            else:
-                for messaggio in messaggi:
-                    messagio_split = messaggio.split(':') 
-                    data = datetime.fromtimestamp(float(messagio_split[0]))
-                    messaggio = messagio_split[1].replace(self.active_user, 'Io') + ':' + "".join(messagio_split[2:])
-                    print(f'[{str(data).split(".")[0]}]{messaggio}')
+        
+        print (">> Chat con", contatto, "<<")          
+        # estrazione dei messaggi dal db
+        messaggi = self.db.get_conversazione(self.active_user, contatto)
+        
+        # print nel caso in cui non ci siano ancora messaggi
+        if not messaggi: 
+            print('Sembra che al momento non siano presenti messaggi, manda un saluto al tuo contatto!')            
+            print("\nScrivi (lascia vuoto per uscire): ", end="")
+        
+        # print dei messaggi con timestamp
+        else:
+            for messaggio in messaggi:
+                messagio_split = messaggio.split(':') 
+                data = datetime.fromtimestamp(float(messagio_split[0]))
+                messaggio = messagio_split[1].replace(self.active_user, 'Io') + ':' + "".join(messagio_split[2:])
+                print(f'[{str(data).split(".")[0]}]{messaggio}')
+
+            print("\nScrivi (lascia vuoto per uscire): ", end="")
+
+    def controlla_nuovi_messaggi(self):
+
+        # estrazione di tutti i contatti dell'utente loggato
+        contatti = self.db.get_contatti(self.active_user)
+
+        # inizializzazione della lista di notifiche
+        notifiche_da = []
+
+        for contatto in contatti:
+            ultimo_accesso = self.db.get_ultimo_accesso(self.active_user, contatto)
+            if not ultimo_accesso:
+                continue
+
+            nuovi_messaggi = self.db.check_nuovi_messaggi(self.active_user, contatto, ultimo_accesso)
+            if nuovi_messaggi and len(nuovi_messaggi) > 0:
+                notifiche_da.append(contatto)
+
+        return notifiche_da
 
     def chat(self, contatto):
 
+        # funzione da eseguire quando si riceve un messaggio dal contatto
+        def azioni_ricezione(_):
+
+            # ricarica chat
+            self.mostra_chat(contatto)
+
+            # aggiornamento dell'accesso alla chat
+            self.db.set_ultimo_accesso(self.active_user, contatto)
+
+            # aggiornamento lista notifiche
+            self.notifiche_da = self.controlla_nuovi_messaggi()
+
+
+        # creazione del thread a partire dalla connessione pubsub al canale della chat
+        pubsub = self.db.get_pubsub(self.active_user, azioni_ricezione, contatto)
+        pubsub_thread = pubsub.run_in_thread(sleep_time=0.1)
+
         while True:
+
+            # aggiornamento dell'accesso alla chat
+            self.db.set_ultimo_accesso(self.active_user, contatto)
+
+            # aggiornamento lista notifiche
+            self.notifiche_da = self.controlla_nuovi_messaggi()
 
             # stampa della chat
             self.mostra_chat(contatto)
 
             # inserimento del messaggio
-            nuovo_messaggio = input('\nScrivi (lascia vuoto per uscire): ')
+            nuovo_messaggio = input("")
 
             # controllo messaggio vuoto per uscire
             if nuovo_messaggio == "":
+
+                # terminazione del thread di ricezione messaggi
+                pubsub_thread.stop()
                 break
             
             # disattivazione della DnD se l'utente che ce l'ha attiva invia un messaggio
@@ -168,15 +291,18 @@ class Manager:
                 input('Premi "invio" per continuare...')
             else:    
                 t = time.time()
-                # date = ":".join(str(datetime.fromtimestamp(t)).split(':')[:-1])
                 
                 nuovo_messaggio =  str(t) + ': ' + self.active_user + ': ' + nuovo_messaggio
                 self.db.update_conversazione(self.active_user, contatto, nuovo_messaggio, t)
 
+                # publish per aggiornare la chat live
+                self.db.notify_channel(contatto, self.active_user)
+
+                # publish per inviare notifica
+                self.db.notify_channel(contatto, message=self.active_user)
+            
     @schermata
     def registrazione(self):
-        print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
-        print()
         
         print("Se vuoi uscire in qualunque momento, inserisci 'q'")
 
@@ -261,16 +387,13 @@ class Manager:
         # aggiunta delle chiavi all'hashmap Redis
         self.db.set_utente(nome_utente, password)
         self.db.set_numero_telefono(nome_utente, numero_telefono)
-        self.active_user = nome_utente
 
-        print(f'\nUtente "{nome_utente}" con numero di telefono "{numero_telefono}" registrato')
+        print(f'\nUtente "{nome_utente}" con numero di telefono "{numero_telefono}" registrato. Per cominciare a chattare esegui il login.')
         input('Premi "invio" per continuare...')
 
     @schermata
     def login(self):
-        print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
-        print()
-        
+                
         print("Se vuoi uscire in qualunque momento, inserisci 'q'")
 
         # inserimento del nome utente
@@ -291,7 +414,23 @@ class Manager:
         output = self.db.get_pass_utente(nome_utente)
 
         if output == password and output != None :
+
+            # arresto del vecchio thread per ricevere le notifiche
+            if self.active_user != None:
+                self.notification_agent_thread.stop()
+            
+            # impostazione del nuovo utente
             self.active_user = nome_utente
+
+             # creazione del thread per ricevere le notifiche
+            notification_agent = self.db.get_pubsub(self.active_user, self.gestisci_notifiche)
+
+            # ricreazione del thread per ricevere le notifiche
+            self.notification_agent_thread = notification_agent.run_in_thread(sleep_time=0.1)
+
+            # controllo di esistenza di nuove notifiche
+            self.notifiche_da = self.controlla_nuovi_messaggi()
+
             print("Login effettuato")
             input('Premi "invio" per continuare...')
             return
@@ -299,28 +438,22 @@ class Manager:
         print ("Nome utente o password errati, riprovare")
         input('Premi "invio" per continuare.')
         return
-        
-        
-
+    
     @schermata
     def logout(self):
-        print("Utente attivo:", self.active_user if self.active_user != None else "guest")
-        print()
-
-        if self.active_user != None:
-
-            decisione = input("Sei sicuro di voler effettuare il logout?\ny=Sì\nn=No\n\n: ")
-
-            if decisione == "y":
-                self.active_user = None
         
+        decisione = input("Sei sicuro di voler effettuare il logout?\ny=Sì\nn=No\n\n: ")
+
+        if decisione == "y":
+            # arresto del thread delle notifiche
+            self.notification_agent_thread.stop()
+
+            # rimozione dell'utente attivo
+            self.active_user = None
+    
     @schermata
     def aggiungi_contatto(self):
-        # TODO: l'utente non dovrebbe essere in grado di mandare la richiesta a se stesso
         
-        print("Utente attivo:", self.active_user if self.active_user != None else "guest")
-        print()
-
         # inserimento da tastiera del nome da ricercare
         nome_utente_ricercato = input("Inserisci il nome utente del contatto da aggiungere: ")
 
@@ -392,8 +525,6 @@ class Manager:
 
     @schermata
     def rimuovi_contatto(self):
-        print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
-        print()
 
         amicizie = self.db.get_contatti(self.active_user)
         if not amicizie:
@@ -427,6 +558,7 @@ class Manager:
 
     @schermata
     def mostra_contatti(self):
+        
         contatti = self.db.get_contatti(self.active_user)
         if not contatti:
             print("\nNon hai contatti.")
@@ -439,12 +571,9 @@ class Manager:
 
     @schermata
     def contatti(self):
-        print("Utente attivo:", self.active_user if self.active_user != None else "guest", end='\n')
-        print()
-        
         if self.active_user == None:
             return
-
+        
         print('''Scegli un'opzione: 
 1- Aggiungi contatto 
 2- Elimina contatto
