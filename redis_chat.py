@@ -417,9 +417,8 @@ class Manager:
         # aggiunta delle chiavi all'hashmap Redis
         self.db.set_utente(nome_utente, password)
         self.db.set_numero_telefono(nome_utente, numero_telefono)
-        self.active_user = nome_utente
 
-        print(f'\nUtente "{nome_utente}" con numero di telefono "{numero_telefono}" registrato')
+        print(f'\nUtente "{nome_utente}" con numero di telefono "{numero_telefono}" registrato. Per cominciare a chattare esegui il login.')
         input('Premi "invio" per continuare...')
 
     @schermata
