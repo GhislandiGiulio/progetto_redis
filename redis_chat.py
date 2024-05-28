@@ -2,7 +2,7 @@ import sys
 import pwinput
 import os
 from datetime import datetime
-from database import Database
+from database import Database, Chiavi
 import time
 import msvcrt
 
@@ -46,6 +46,7 @@ class Manager:
         
         # inzializzazione e controllo presenza di notifiche
         self.notifiche_da = []
+        self.chiavi = Chiavi()
 
 
     def gestisci_notifiche(self, messaggio=None):
@@ -263,10 +264,32 @@ class Manager:
 
             # aggiornamento lista notifiche
             self.notifiche_da = self.controlla_nuovi_messaggi()
+        
+        def azioni_effimeri(message):
+            key = message['data']
+            k = self.chiavi.messaggio_effimero(self.active_user, contatto).split(':')[:-1]
+            
+            if k != key.split(':')[:-1]: 
+                ## se il messaggio cancellato non fa parte di questa chat ignoralo
+                ## c'è bisogno di questo check perchè redis invia una notifica per TUTTI i messaggi cancellati
+                ## se lo aggiornassimo ogni volta che un messaggio di qualsiasi utente si cancella le perf. calerebbero
+                return 
+            
+            # ricarica chat
+            self.mostra_chat(contatto, effimeri)
 
+            # aggiornamento lista notifiche
+            self.notifiche_da = self.controlla_nuovi_messaggi()
+        
+
+        
         # creazione del thread a partire dalla connessione pubsub al canale della chat
         pubsub = self.db.get_pubsub(self.active_user, azioni_ricezione, contatto, effimeri)
         pubsub_thread = pubsub.run_in_thread(sleep_time=0.1)
+
+        if effimeri:
+            pubsub_cancellazione = self.db.get_pubsub_messaggi_effimeri(self.active_user, azioni_effimeri, contatto)
+            pubsub_cancellazione_thread = pubsub_cancellazione.run_in_thread(sleep_time=0.1)
 
         while True:
             # aggiornamento dell'accesso alla chat
@@ -309,6 +332,8 @@ class Manager:
 
                 # terminazione del thread di ricezione messaggi
                 pubsub_thread.stop()
+                if effimeri: 
+                    pubsub_cancellazione_thread.stop()
                 break
             
             # disattivazione della DnD se l'utente che ce l'ha attiva invia un messaggio

@@ -10,13 +10,12 @@ class Database:
     ):
 
         self.redis = redis.Redis(
-                    host='redis-19533.c250.eu-central-1-1.ec2.redns.redis-cloud.com',
-                    port=19533,
-                    username="giulio",
-                    password="Rxa3LdM4Wa3Li7d#",
-                    decode_responses=True
-                    )
+            host='127.0.0.1',
+            port=porta,
+            decode_responses=True
+        )
         
+        self.redis.config_set('notify-keyspace-events', 'Ex')
         self.chiavi = Chiavi()
         
     def user_exists(self, utente):
@@ -150,11 +149,6 @@ Ritorna None se esso non esiste"""
             messaggio,
             ex=60    
         )
-        
-        # self.redis.zadd(
-        #     self.chiavi.utente_amici(contatto),
-        #     {utente: score}
-        # )
     
     def get_pubsub(self, utente, funzione, contatto=None, effimeri=False):
 
@@ -163,6 +157,13 @@ Ritorna None se esso non esiste"""
             pubsub.psubscribe(**{self.chiavi.canale(utente, contatto): funzione})
         else:
             pubsub.psubscribe(**{self.chiavi.canale_effimeri(utente, contatto): funzione})
+        return pubsub
+
+    def get_pubsub_messaggi_effimeri(self, utente, funzione, contatto=None):
+        pubsub = self.redis.pubsub()
+        # pubsub.psubscribe(**{self.chiavi.canale_effimeri_cancellazione(utente, contatto): funzione})
+        pubsub.psubscribe(**{'__keyevent@0__:expired': funzione})
+
         return pubsub
     
     def notify_channel(self, contatto, utente=None, message="", effimeri=False):
@@ -189,6 +190,7 @@ Ritorna None se esso non esiste"""
             ultimo_accesso,
             time.time()
         )
+    
         
 class Chiavi:
     def __init__(self):
@@ -202,3 +204,4 @@ class Chiavi:
         self.conversazione_effimeri = lambda id_utente1, id_utente2: f'chat:{sorted([id_utente1, id_utente2])[0]}:{sorted([id_utente1, id_utente2])[1]}:messaggi_effimeri' ## per salvare i messaggi di una chat a tempo
         self.messaggio_effimero = lambda id_utente1, id_utente2: f'chat:{sorted([id_utente1, id_utente2])[0]}:{sorted([id_utente1, id_utente2])[1]}:messaggio_effimero:{uuid1()}'
         self.canale_effimeri = lambda id_utente1, id_utente2: f'channel:{id_utente1}:{id_utente2}:effimeri'
+        self.canale_effimeri_cancellazione = lambda id_utente1, id_utente2: f'channel:{id_utente1}:{id_utente2}:delete_effimeri'
