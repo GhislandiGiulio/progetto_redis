@@ -209,7 +209,9 @@ class Manager:
     @schermata
     def mostra_chat(self, contatto, effimeri=False):
         
-        print (">> Chat con", contatto, "<<")          
+        print (">> Chat con", contatto, "<<")     
+        if effimeri:
+            print('I messaggi in questa chat spariranno dopo 60s dalla loro visualizzazione')     
         
         # estrazione dei messaggi dal db
         if not effimeri:
@@ -288,7 +290,7 @@ class Manager:
         pubsub_thread = pubsub.run_in_thread(sleep_time=0.1)
 
         if effimeri:
-            pubsub_cancellazione = self.db.get_pubsub_messaggi_effimeri(self.active_user, azioni_effimeri, contatto)
+            pubsub_cancellazione = self.db.get_pubsub_messaggi_effimeri(azioni_effimeri)
             pubsub_cancellazione_thread = pubsub_cancellazione.run_in_thread(sleep_time=0.1)
 
         while True:

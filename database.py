@@ -17,6 +17,7 @@ class Database:
         
         self.redis.config_set('notify-keyspace-events', 'Ex')
         self.chiavi = Chiavi()
+        self.expire = 60
         
     def user_exists(self, utente):
         return self.redis.hexists("users", utente)
@@ -118,18 +119,43 @@ Ritorna None se esso non esiste"""
         """Ritorna tutti i messaggi di una chat negli ultimi 60sec"""
         
         ## id dei messaggi inviati/ricevuti negli ultimi 60sec
-        id_messagi = self.redis.zrangebyscore(
+        id_messagi = self.redis.zrange(
             self.chiavi.conversazione_effimeri(utente, contatto), 
-            time.time()-59, 
-            time.time()
+            0, 
+            -1
         )
         
         ## testo dei messaggi
         messaggi = []
-        for id_messagio in id_messagi:
-            messaggi.append(
-                self.redis.get(id_messagio)
+        for id_messaggio in id_messagi:
+            messaggio = self.redis.get(id_messaggio)
+            
+            ## il messaggio è stato cancellato
+            if not messaggio: 
+                ## -> pulizia del database
+                self.redis.delete(id_messaggio)
+                self.redis.delete(self.chiavi.messaggio_effimero_visualizzato(utente, contatto, id_messaggio.split(':')[-1]))
+                self.redis.zrem(self.chiavi.conversazione_effimeri(utente, contatto), id_messaggio)
+                continue
+            
+            messaggio_visualizzato = self.redis.get(
+                self.chiavi.messaggio_effimero_visualizzato(utente, contatto, id_messaggio.split(':')[-1])
             )
+            
+            if messaggio_visualizzato == "False" and messaggio.split(': ')[1] == contatto:
+                self.redis.set(
+                    self.chiavi.messaggio_effimero_visualizzato(utente, contatto, id_messaggio.split(':')[-1]),
+                    "True"
+                )
+                
+                ## setta l'expire del messaggio
+                self.redis.set(
+                    id_messaggio,
+                    messaggio,
+                    ex=60
+                )
+                
+            messaggi.append(messaggio)
         
         return messaggi
 
@@ -143,11 +169,15 @@ Ritorna None se esso non esiste"""
             {id_messaggio: score}
         )
         
+        self.redis.set(
+            self.chiavi.messaggio_effimero_visualizzato(utente, contatto, id_messaggio.split(':')[-1]),
+            "False",
+        )
+        
         ## aggiunge il messaggio sotto il suo id
         self.redis.set(
             id_messaggio,
             messaggio,
-            ex=60    
         )
     
     def get_pubsub(self, utente, funzione, contatto=None, effimeri=False):
@@ -159,7 +189,7 @@ Ritorna None se esso non esiste"""
             pubsub.psubscribe(**{self.chiavi.canale_effimeri(utente, contatto): funzione})
         return pubsub
 
-    def get_pubsub_messaggi_effimeri(self, utente, funzione, contatto=None):
+    def get_pubsub_messaggi_effimeri(self, funzione):
         pubsub = self.redis.pubsub()
         pubsub.psubscribe(**{'__keyevent@0__:expired': funzione})
 
@@ -200,7 +230,8 @@ class Chiavi:
         self.utente_ultimo_accesso_chat = lambda id_utente, contatto: f'user:{id_utente}:last_acces_to_chat:{sorted([id_utente, contatto])[0]}:{sorted([id_utente, contatto])[1]}'
         self.conversazione = lambda id_utente1, id_utente2: f'chat:{sorted([id_utente1, id_utente2])[0]}:{sorted([id_utente1, id_utente2])[1]}' ## per salvare i messaggi di una chat
         self.canale = lambda id_utente1, id_utente2: f'channel:{id_utente1}:{id_utente2}'
-        self.conversazione_effimeri = lambda id_utente1, id_utente2: f'chat:{sorted([id_utente1, id_utente2])[0]}:{sorted([id_utente1, id_utente2])[1]}:messaggi_effimeri' ## per salvare i messaggi di una chat a tempo
-        self.messaggio_effimero = lambda id_utente1, id_utente2: f'chat:{sorted([id_utente1, id_utente2])[0]}:{sorted([id_utente1, id_utente2])[1]}:messaggio_effimero:{uuid1()}'
+        self.conversazione_effimeri = lambda id_utente1, id_utente2: f'chat:{sorted([id_utente1, id_utente2])[0]}:{sorted([id_utente1, id_utente2])[1]}:timed_messagges' ## per salvare i messaggi di una chat a tempo
+        self.messaggio_effimero = lambda id_utente1, id_utente2: f'chat:{sorted([id_utente1, id_utente2])[0]}:{sorted([id_utente1, id_utente2])[1]}:timed_message:{uuid1()}'
+        self.messaggio_effimero_visualizzato = lambda id_utente1, id_utente2, id_messaggio: f'chat:{sorted([id_utente1, id_utente2])[0]}:{sorted([id_utente1, id_utente2])[1]}:timed_message:{id_messaggio}:visualized'
         self.canale_effimeri = lambda id_utente1, id_utente2: f'channel:{id_utente1}:{id_utente2}:effimeri'
         self.canale_effimeri_cancellazione = lambda id_utente1, id_utente2: f'channel:{id_utente1}:{id_utente2}:delete_effimeri'
