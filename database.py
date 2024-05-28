@@ -1,5 +1,6 @@
 import redis
 import time
+from uuid import uuid1
 
 class Database:
     """Questa classe è realizzata per raggruppare le funzioni che interagiscono con il database Redis e i valori delle chiavi"""
@@ -113,17 +114,62 @@ Ritorna None se esso non esiste"""
             self.chiavi.utente_amici(contatto),
             {utente: score}
         )
+    
+    def get_conversazione_effimeri(self, utente, contatto):
+        """Ritorna tutti i messaggi di una chat negli ultimi 60sec"""
         
-    def get_pubsub(self, utente, funzione, contatto=None):
+        ## id dei messaggi inviati/ricevuti negli ultimi 60sec
+        id_messagi = self.redis.zrangebyscore(
+            self.chiavi.conversazione_effimeri(utente, contatto), 
+            time.time()-60, 
+            time.time()
+        )
+        
+        ## testo dei messaggi
+        messaggi = []
+        for id_messagio in id_messagi:
+            messaggi.append(
+                self.redis.get(id_messagio)
+            )
+        
+        return messaggi
+
+    def update_conversazione_effimeri(self, utente, contatto, messaggio, score):
+        """Aggiunge un messaggio alla chat effimeri"""
+        id_messaggio = self.chiavi.messaggio_effimero(utente, contatto)
+        
+        ## aggiunge id del messaggio alla lista
+        self.redis.zadd(
+            self.chiavi.conversazione_effimeri(utente, contatto),
+            {id_messaggio: score}
+        )
+        
+        ## aggiunge il messaggio sotto il suo id
+        self.redis.set(
+            id_messaggio,
+            messaggio,
+            ex=60    
+        )
+        
+        # self.redis.zadd(
+        #     self.chiavi.utente_amici(contatto),
+        #     {utente: score}
+        # )
+    
+    def get_pubsub(self, utente, funzione, contatto=None, effimeri=False):
 
         pubsub = self.redis.pubsub()
-        pubsub.psubscribe(**{self.chiavi.canale(utente, contatto): funzione})
-
+        if not effimeri:
+            pubsub.psubscribe(**{self.chiavi.canale(utente, contatto): funzione})
+        else:
+            pubsub.psubscribe(**{self.chiavi.canale_effimeri(utente, contatto): funzione})
         return pubsub
     
-    def notify_channel(self, contatto, utente=None, message=""):
-
-        self.redis.publish(self.chiavi.canale(contatto, utente), message)
+    def notify_channel(self, contatto, utente=None, message="", effimeri=False):
+        if not effimeri:
+            self.redis.publish(self.chiavi.canale(contatto, utente), message)
+        else:
+            self.redis.publish(self.chiavi.canale_effimeri(contatto, utente), message)
     
     def set_ultimo_accesso(self, utente, contatto):
         """Aggiorna l'ultimo accesso di un utente ad una determinata chat"""
@@ -153,3 +199,6 @@ class Chiavi:
         self.utente_ultimo_accesso_chat = lambda id_utente, contatto: f'user:{id_utente}:last_acces_to_chat:{sorted([id_utente, contatto])[0]}:{sorted([id_utente, contatto])[1]}'
         self.conversazione = lambda id_utente1, id_utente2: f'chat:{sorted([id_utente1, id_utente2])[0]}:{sorted([id_utente1, id_utente2])[1]}' ## per salvare i messaggi di una chat
         self.canale = lambda id_utente1, id_utente2: f'channel:{id_utente1}:{id_utente2}'
+        self.conversazione_effimeri = lambda id_utente1, id_utente2: f'chat:{sorted([id_utente1, id_utente2])[0]}:{sorted([id_utente1, id_utente2])[1]}:messaggi_effimeri' ## per salvare i messaggi di una chat a tempo
+        self.messaggio_effimero = lambda id_utente1, id_utente2: f'chat:{sorted([id_utente1, id_utente2])[0]}:{sorted([id_utente1, id_utente2])[1]}:messaggio_effimero:{uuid1()}'
+        self.canale_effimeri = lambda id_utente1, id_utente2: f'channel:{id_utente1}:{id_utente2}:effimeri'

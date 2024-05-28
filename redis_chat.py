@@ -84,8 +84,9 @@ class Manager:
         if self.active_user:
             print("""3- Logout
 4- Chat
-5- Contatti
-6- Imposta modalità non disturbare""")
+5- Chat con messaggi effimeri
+6- Contatti
+7- Imposta modalità non disturbare""")
 
         print('q- Esci dal programma')
         
@@ -102,8 +103,10 @@ class Manager:
                 case "4":
                     self.menu_chat()
                 case "5":
-                    self.contatti()
+                    self.menu_chat(effimeri=True)
                 case "6":
+                    self.contatti()
+                case "7":
                     self.non_disturbare()
                 case "q":
                     self.notification_agent_thread.stop()
@@ -150,7 +153,7 @@ class Manager:
         input('\nPremi "invio" per continuare...')
 
     @schermata
-    def menu_chat(self):
+    def menu_chat(self, effimeri=False):
 
         contatti = self.db.get_contatti(self.active_user)
         
@@ -161,21 +164,29 @@ class Manager:
             return
         
         print("Se vuoi uscire in qualunque momento, inserisci 'q'\n")
-        print("   n   |            nome              |    DnD    |  Nuovi mess.  ")
-        print("------------------------------------------------------------------")
+        
+        if effimeri:
+            print("   n   |            nome              |    DnD    ") 
+            print("--------------------------------------------------")
+
+        else:
+            print("   n   |            nome              |    DnD    |  Nuovi mess.  ")
+            print("------------------------------------------------------------------")
 
         
         # stampa di indice, utente e stato dnd per ogni contatto
         for i, utente in enumerate(contatti):
             
-            ## calcolo dei messaggi non letti
-            ultimo_accesso = self.db.get_ultimo_accesso(self.active_user, utente)
-            nuovi_messaggi = 0
-            if ultimo_accesso:
-                nuovi_messaggi = len(self.db.check_nuovi_messaggi(self.active_user, utente, ultimo_accesso))
-                    
-            print(f"   {i+1}   "+f"|     {utente}"+" " * (25-len(utente))+("|     ●     |" if self.db.get_non_disturbare(utente) == "on" else "|     ○     |")+f"     n.{nuovi_messaggi}")        
-            # print("---------------------------------------------------")
+            if effimeri:
+                print(f"   {i+1}   "+f"|     {utente}"+" " * (25-len(utente))+("|     ●     |" if self.db.get_non_disturbare(utente) == "on" else "|     ○     |"))
+            else:        
+                ## calcolo dei messaggi non letti
+                ultimo_accesso = self.db.get_ultimo_accesso(self.active_user, utente)
+                nuovi_messaggi = 0
+                if ultimo_accesso:
+                    nuovi_messaggi = len(self.db.check_nuovi_messaggi(self.active_user, utente, ultimo_accesso))
+                        
+                print(f"   {i+1}   "+f"|     {utente}"+" " * (25-len(utente))+("|     ●     |" if self.db.get_non_disturbare(utente) == "on" else "|     ○     |")+f"     n.{nuovi_messaggi}")        
         
         scelta = input("\nScelta: ")
 
@@ -192,14 +203,18 @@ class Manager:
             return
         
         contatto = list(contatti)[scelta-1]
-        self.chat(contatto)
+        self.chat(contatto, effimeri)
 
     @schermata
-    def mostra_chat(self, contatto):
+    def mostra_chat(self, contatto, effimeri=False):
         
         print (">> Chat con", contatto, "<<")          
+        
         # estrazione dei messaggi dal db
-        messaggi = self.db.get_conversazione(self.active_user, contatto)
+        if not effimeri:
+            messaggi = self.db.get_conversazione(self.active_user, contatto)
+        else:
+            messaggi = self.db.get_conversazione_effimeri(self.active_user, contatto)
         
         # print nel caso in cui non ci siano ancora messaggi
         if not messaggi: 
@@ -234,29 +249,29 @@ class Manager:
 
         return notifiche_da
 
-    def chat(self, contatto):
+    def chat(self, contatto, effimeri=False):
 
         # funzione da eseguire quando si riceve un messaggio dal contatto
         def azioni_ricezione(_):
 
             # ricarica chat
-            self.mostra_chat(contatto)
+            self.mostra_chat(contatto, effimeri)
 
             # aggiornamento dell'accesso alla chat
-            self.db.set_ultimo_accesso(self.active_user, contatto)
+            if not effimeri:
+                self.db.set_ultimo_accesso(self.active_user, contatto)
 
             # aggiornamento lista notifiche
             self.notifiche_da = self.controlla_nuovi_messaggi()
 
-
         # creazione del thread a partire dalla connessione pubsub al canale della chat
-        pubsub = self.db.get_pubsub(self.active_user, azioni_ricezione, contatto)
+        pubsub = self.db.get_pubsub(self.active_user, azioni_ricezione, contatto, effimeri)
         pubsub_thread = pubsub.run_in_thread(sleep_time=0.1)
 
         while True:
-
             # aggiornamento dell'accesso alla chat
-            self.db.set_ultimo_accesso(self.active_user, contatto)
+            if not effimeri:
+                self.db.set_ultimo_accesso(self.active_user, contatto)
 
             # aggiornamento lista notifiche
             self.notifiche_da = self.controlla_nuovi_messaggi()
@@ -265,7 +280,7 @@ class Manager:
             self.nuovo_messaggio = ''
 
             # stampa della chat
-            self.mostra_chat(contatto)
+            self.mostra_chat(contatto, effimeri)
 
             ## inserimento del messaggio
             while True:
@@ -287,7 +302,7 @@ class Manager:
                     
                     else: continue
                     
-                    self.mostra_chat(contatto)
+                    self.mostra_chat(contatto, effimeri)
 
             # controllo messaggio vuoto per uscire
             if self.nuovo_messaggio == "":
@@ -309,14 +324,19 @@ class Manager:
                 t = time.time()
                 
                 self.nuovo_messaggio =  str(t) + ': ' + self.active_user + ': ' + self.nuovo_messaggio
-                self.db.update_conversazione(self.active_user, contatto, self.nuovo_messaggio, t)
+                
+                if not effimeri:
+                    self.db.update_conversazione(self.active_user, contatto, self.nuovo_messaggio, t)
+                else:
+                    self.db.update_conversazione_effimeri(self.active_user, contatto, self.nuovo_messaggio, t)
 
                 # publish per aggiornare la chat live
-                self.db.notify_channel(contatto, self.active_user)
+                self.db.notify_channel(contatto, self.active_user, effimeri=effimeri)
 
                 # publish per inviare notifica
-                self.db.notify_channel(contatto, message=self.active_user)
+                self.db.notify_channel(contatto, message=self.active_user, effimeri=effimeri)
             
+    
     @schermata
     def registrazione(self):
         
