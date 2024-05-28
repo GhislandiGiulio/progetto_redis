@@ -226,8 +226,9 @@ class Manager:
             messaggi_formattati = []
             for messaggio in self.messaggi_chat:
                 messagio_split = messaggio.split(':') 
-                data = datetime.fromtimestamp(float(messagio_split[0]))
-                messaggio = f'[{str(data).split(".")[0]}]{messagio_split[1].replace(self.active_user, "Io")}:{"".join(messagio_split[2:])}'
+                data = str(datetime.fromtimestamp(float(messagio_split[0]))).split(".")[0]
+                user = 'Io' if messagio_split[1].strip() == self.active_user else messagio_split[1].strip() 
+                messaggio = f'[{data}] {user}:{":".join(messagio_split[2:])}'
                 messaggi_formattati.append(messaggio)
                 
             print('\n'.join(messaggi_formattati))
