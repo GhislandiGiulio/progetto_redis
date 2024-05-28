@@ -6,7 +6,10 @@ import time
 
 
 def schermata(f):
-    def wrapper(self, *args, **kwargs):
+    def wrapper(*args, **kwargs):
+        #! self fa parte di args, il modo giusto per accederci è:
+        self = args[0]
+        
         """Questa funzione pulisce il terminale e stampa delle informazioni:
         - Utente attivo
         - Notifiche ricevute (da aggiungere)"""
@@ -29,7 +32,7 @@ def schermata(f):
             print("Nessun utente attivo.")
 
         print()
-        return f(self, *args, **kwargs)
+        return f(*args, **kwargs)
     return wrapper
 
 class Manager:
