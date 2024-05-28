@@ -1,3 +1,4 @@
+import sys
 import pwinput
 import os
 from datetime import datetime
@@ -48,32 +49,29 @@ class Manager:
 
 
     def gestisci_notifiche(self, messaggio=None):
-        
         def mostra_notifica(lista_contatti):
-
-            # memorizzazione posizione cursore
+            # Memorizzazione posizione cursore
             print("\033[s", end='')
-
-            # spostamento del cursore in alto a sinistra
+            # Spostamento del cursore in alto a sinistra
             print("\033[1;1H", end='')
 
-            # stampa della notifica
+            # Stampa della notifica
             if lista_contatti:
-                print(f"Hai delle nuove notifiche da: {', '.join(lista_contatti) }", end="")
+                print(f"Hai delle nuove notifiche da: {', '.join(lista_contatti)}", end="")
             else:
-                print("", end="")
-                
-            # [print(contatto + ", " if len(lista_contatti) > 1 else contatto, end="") for contatto in lista_contatti]
-
-            # ritorno cursore alla posizione memorizzata prima
+                print("Nessuna nuova notifica.", end="")
+            
+            # Ritorno cursore alla posizione memorizzata prima
             print("\033[u", end='')
-            print()
+            
+            # Flush dello stdout per forzare la stampa
+            sys.stdout.flush()
 
-        if messaggio:        
-            contatto = messaggio["data"]    
-            if contatto not in self.notifiche_da:    
+        if messaggio:
+            contatto = messaggio["data"]
+            if contatto not in self.notifiche_da:
                 self.notifiche_da.append(contatto)
-        
+
         mostra_notifica(self.notifiche_da)
 
     @schermata
