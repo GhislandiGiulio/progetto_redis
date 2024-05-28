@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from database import Database
 import time
-
+import msvcrt
 
 def schermata(f):
     def wrapper(self, *args, **kwargs):
@@ -77,7 +77,6 @@ class Manager:
         if self.notifiche_da != []:
             mostra_notifica(self.notifiche_da)
 
-        
 
     @schermata
     def menu_iniziale(self):
@@ -209,7 +208,6 @@ class Manager:
         # print nel caso in cui non ci siano ancora messaggi
         if not messaggi: 
             print('Sembra che al momento non siano presenti messaggi, manda un saluto al tuo contatto!')            
-            print("\nScrivi (lascia vuoto per uscire): ", end="")
         
         # print dei messaggi con timestamp
         else:
@@ -219,7 +217,7 @@ class Manager:
                 messaggio = messagio_split[1].replace(self.active_user, 'Io') + ':' + "".join(messagio_split[2:])
                 print(f'[{str(data).split(".")[0]}]{messaggio}')
 
-            print("\nScrivi (lascia vuoto per uscire): ", end="")
+        print(f"\nScrivi (lascia vuoto per uscire): {self.nuovo_messaggio}", end="")
 
     def controlla_nuovi_messaggi(self):
 
@@ -267,14 +265,35 @@ class Manager:
             # aggiornamento lista notifiche
             self.notifiche_da = self.controlla_nuovi_messaggi()
 
+            self.nuovo_messaggio = ''
+
             # stampa della chat
             self.mostra_chat(contatto)
 
-            # inserimento del messaggio
-            nuovo_messaggio = input("")
+            ## inserimento del messaggio
+            while True:
+                if msvcrt.kbhit():
+                    key = msvcrt.getch()
+                    ## se premiamo "enter" -> esci
+                    if key == b'\r':
+                        break
+                    
+                    ## se premiamo "cancel"/"delete" rimuoviamo l'ultima lettere del messaggio
+                    elif key == b'\x08': 
+                        self.nuovo_messaggio = self.nuovo_messaggio[:-1]
+                        
+                    elif len(key) == 1: 
+                        try:
+                            key = key.decode()
+                            self.nuovo_messaggio += key
+                        except: pass ## il carattere premuto non è decifrabile / non è valido
+                    
+                    else: continue
+                    
+                    self.mostra_chat(contatto)
 
             # controllo messaggio vuoto per uscire
-            if nuovo_messaggio == "":
+            if self.nuovo_messaggio == "":
 
                 # terminazione del thread di ricezione messaggi
                 pubsub_thread.stop()
@@ -292,8 +311,8 @@ class Manager:
             else:    
                 t = time.time()
                 
-                nuovo_messaggio =  str(t) + ': ' + self.active_user + ': ' + nuovo_messaggio
-                self.db.update_conversazione(self.active_user, contatto, nuovo_messaggio, t)
+                self.nuovo_messaggio =  str(t) + ': ' + self.active_user + ': ' + self.nuovo_messaggio
+                self.db.update_conversazione(self.active_user, contatto, self.nuovo_messaggio, t)
 
                 # publish per aggiornare la chat live
                 self.db.notify_channel(contatto, self.active_user)
