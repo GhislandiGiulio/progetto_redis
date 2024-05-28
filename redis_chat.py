@@ -67,6 +67,7 @@ class Manager:
 
             # ritorno cursore alla posizione memorizzata prima
             print("\033[u", end='')
+            print()
 
         if messaggio:        
             contatto = messaggio["data"]    
@@ -74,8 +75,6 @@ class Manager:
                 self.notifiche_da.append(contatto)
         
         mostra_notifica(self.notifiche_da)
-        print()
-        
 
     @schermata
     def menu_iniziale(self):
