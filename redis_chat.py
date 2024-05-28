@@ -21,7 +21,7 @@ def schermata(f):
         if self.active_user:
             active_user_name = self.active_user if self.active_user is not None else "guest"
 
-            print("Utente attivo:", active_user_name, end='\n')
+            print("\nUtente attivo:", active_user_name, end='\n')
 
             self.gestisci_notifiche()
 
