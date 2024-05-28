@@ -6,7 +6,7 @@ class Database:
     """Questa classe è realizzata per raggruppare le funzioni che interagiscono con il database Redis e i valori delle chiavi"""
     def __init__(
         self,
-        porta: str
+        porta: str = 6379,
     ):
 
         self.redis = redis.Redis(
@@ -120,7 +120,7 @@ Ritorna None se esso non esiste"""
         ## id dei messaggi inviati/ricevuti negli ultimi 60sec
         id_messagi = self.redis.zrangebyscore(
             self.chiavi.conversazione_effimeri(utente, contatto), 
-            time.time()-60, 
+            time.time()-59, 
             time.time()
         )
         
@@ -161,7 +161,6 @@ Ritorna None se esso non esiste"""
 
     def get_pubsub_messaggi_effimeri(self, utente, funzione, contatto=None):
         pubsub = self.redis.pubsub()
-        # pubsub.psubscribe(**{self.chiavi.canale_effimeri_cancellazione(utente, contatto): funzione})
         pubsub.psubscribe(**{'__keyevent@0__:expired': funzione})
 
         return pubsub
