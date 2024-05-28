@@ -17,6 +17,7 @@ class Database:
                     )
         
         self.chiavi = Chiavi()
+        self.pubsub = None
         
     def user_exists(self, utente):
         return self.redis.hexists("users", utente)
@@ -115,10 +116,9 @@ Ritorna None se esso non esiste"""
         )
         
     def get_pubsub(self, utente, funzione, contatto=None):
-
         pubsub = self.redis.pubsub()
         pubsub.psubscribe(**{self.chiavi.canale(utente, contatto): funzione})
-
+        
         return pubsub
     
     def notify_channel(self, contatto, utente=None, message=""):
