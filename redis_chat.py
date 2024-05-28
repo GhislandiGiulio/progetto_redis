@@ -1,4 +1,5 @@
 import pwinput
+import msvcrt
 import os
 from datetime import datetime
 from database import Database
@@ -31,8 +32,8 @@ def schermata(f):
         else:
             print("Nessun utente attivo.")
 
-        print()
-        return f(*args, **kwargs)
+        res = f(self, *args[2:], **kwargs)
+        return res
     return wrapper
 
 class Manager:
@@ -255,10 +256,15 @@ class Manager:
             self.notifiche_da = self.controlla_nuovi_messaggi()
 
             # stampa della chat
-            self.mostra_chat(contatto)
+            # self.mostra_chat(contatto)
 
             # inserimento del messaggio
-            nuovo_messaggio = input("")
+            nuovo_messaggio = ''
+
+            # stampa della chat
+            self.mostra_chat(contatto, nuovo_messaggio)
+
+            input('Scrivi: ')
 
             # controllo messaggio vuoto per uscire
             if nuovo_messaggio == "":
