@@ -225,11 +225,14 @@ class Manager:
         
         # print dei messaggi con timestamp
         else:
+            messaggi_formattati = []
             for messaggio in messaggi:
                 messagio_split = messaggio.split(':') 
                 data = datetime.fromtimestamp(float(messagio_split[0]))
-                messaggio = messagio_split[1].replace(self.active_user, 'Io') + ':' + "".join(messagio_split[2:])
-                print(f'[{str(data).split(".")[0]}]{messaggio}')
+                messaggio = f'[{str(data).split(".")[0]}]{messagio_split[1].replace(self.active_user, "Io")}: {"".join(messagio_split[2:])}'
+                messaggi_formattati.append(messaggio)
+                
+            print('\n'.join(messaggi_formattati))
 
         print(f"\nScrivi (lascia vuoto per uscire): {self.nuovo_messaggio}", end="")
 
@@ -259,7 +262,7 @@ class Manager:
 
             # ricarica chat
             self.mostra_chat(contatto, effimeri)
-
+            
             # aggiornamento dell'accesso alla chat
             if not effimeri:
                 self.db.set_ultimo_accesso(self.active_user, contatto)
@@ -306,7 +309,7 @@ class Manager:
 
             # stampa della chat
             self.mostra_chat(contatto, effimeri)
-
+            
             ## inserimento del messaggio
             while True:
                 if msvcrt.kbhit():
