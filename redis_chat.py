@@ -46,6 +46,9 @@ class Manager:
         
         # inzializzazione e controllo presenza di notifiche
         self.notifiche_da = []
+
+        self.nuovo_messaggio = ''
+        self.messaggi_chat = []
         self.chiavi = Chiavi()
 
 
@@ -213,23 +216,18 @@ class Manager:
         if effimeri:
             print('I messaggi in questa chat spariranno dopo 60s dalla loro visualizzazione')     
         
-        # estrazione dei messaggi dal db
-        if not effimeri:
-            messaggi = self.db.get_conversazione(self.active_user, contatto)
-        else:
-            messaggi = self.db.get_conversazione_effimeri(self.active_user, contatto)
-        
+       
         # print nel caso in cui non ci siano ancora messaggi
-        if not messaggi: 
+        if not self.messaggi_chat: 
             print('Sembra che al momento non siano presenti messaggi, manda un saluto al tuo contatto!')            
         
         # print dei messaggi con timestamp
         else:
             messaggi_formattati = []
-            for messaggio in messaggi:
+            for messaggio in self.messaggi_chat:
                 messagio_split = messaggio.split(':') 
                 data = datetime.fromtimestamp(float(messagio_split[0]))
-                messaggio = f'[{str(data).split(".")[0]}]{messagio_split[1].replace(self.active_user, "Io")}: {"".join(messagio_split[2:])}'
+                messaggio = f'[{str(data).split(".")[0]}]{messagio_split[1].replace(self.active_user, "Io")}:{"".join(messagio_split[2:])}'
                 messaggi_formattati.append(messaggio)
                 
             print('\n'.join(messaggi_formattati))
@@ -259,7 +257,13 @@ class Manager:
 
         # funzione da eseguire quando si riceve un messaggio dal contatto
         def azioni_ricezione(_):
-
+            # aggiorna la lista dei messaggi
+            if not effimeri:
+                # aggiornamento dell'accesso alla chat
+                self.messaggi_chat = self.db.get_conversazione(self.active_user, contatto)
+            else:
+                self.messaggi_chat = self.db.get_conversazione_effimeri(self.active_user, contatto)
+        
             # ricarica chat
             self.mostra_chat(contatto, effimeri)
             
@@ -271,6 +275,7 @@ class Manager:
             self.notifiche_da = self.controlla_nuovi_messaggi()
         
         def azioni_effimeri(message):
+        
             key = message['data']
             k = self.chiavi.messaggio_effimero(self.active_user, contatto).split(':')[:-1]
             
@@ -279,6 +284,13 @@ class Manager:
                 ## c'è bisogno di questo check perchè redis invia una notifica per TUTTI i messaggi cancellati
                 ## se lo aggiornassimo ogni volta che un messaggio di qualsiasi utente si cancella le perf. calerebbero
                 return 
+            
+            # aggiorna la lista dei messaggi
+            if not effimeri:
+                # aggiornamento dell'accesso alla chat
+                self.messaggi_chat = self.db.get_conversazione(self.active_user, contatto)
+            else:
+                self.messaggi_chat = self.db.get_conversazione_effimeri(self.active_user, contatto)
             
             # ricarica chat
             self.mostra_chat(contatto, effimeri)
@@ -297,16 +309,20 @@ class Manager:
             pubsub_cancellazione_thread = pubsub_cancellazione.run_in_thread(sleep_time=0.1)
 
         while True:
-            # aggiornamento dell'accesso alla chat
-            if not effimeri:
-                self.db.set_ultimo_accesso(self.active_user, contatto)
-
             # aggiornamento lista notifiche
             self.notifiche_da = self.controlla_nuovi_messaggi()
 
-            # inserimento del messaggio
-            self.nuovo_messaggio = ''
+            # estrazione dei messaggi dal db
+            if not effimeri:
+                # aggiornamento dell'accesso alla chat
+                self.db.set_ultimo_accesso(self.active_user, contatto)
 
+                self.messaggi_chat = self.db.get_conversazione(self.active_user, contatto)
+            else:
+                self.messaggi_chat = self.db.get_conversazione_effimeri(self.active_user, contatto)
+        
+            self.nuovo_messaggio = ''
+            
             # stampa della chat
             self.mostra_chat(contatto, effimeri)
             
@@ -365,7 +381,7 @@ class Manager:
 
                 # publish per inviare notifica
                 self.db.notify_channel(contatto, message=self.active_user, effimeri=effimeri)
-            
+                
     
     @schermata
     def registrazione(self):
