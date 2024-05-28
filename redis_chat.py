@@ -21,7 +21,7 @@ def schermata(f):
         if self.active_user:
             active_user_name = self.active_user if self.active_user is not None else "guest"
 
-            print("\nUtente attivo:", active_user_name, end='\n')
+            print("Utente attivo:", active_user_name, end='\n')
 
             self.gestisci_notifiche()
 
@@ -58,25 +58,23 @@ class Manager:
             print("\033[1;1H", end='')
 
             # stampa della notifica
-            print("Hai delle nuove notifiche da: " if lista_contatti != [] else "", end="")
-
-            [print(contatto + ", " if len(lista_contatti) > 1 else contatto, end="") for contatto in lista_contatti]
+            if lista_contatti:
+                print(f"Hai delle nuove notifiche da: {', '.join(lista_contatti) }", end="")
+            else:
+                print("", end="")
+                
+            # [print(contatto + ", " if len(lista_contatti) > 1 else contatto, end="") for contatto in lista_contatti]
 
             # ritorno cursore alla posizione memorizzata prima
             print("\033[u", end='')
 
-        if messaggio is None:
-            mostra_notifica(self.notifiche_da)
-            return
+        if messaggio:        
+            contatto = messaggio["data"]    
+            if contatto not in self.notifiche_da:    
+                self.notifiche_da.append(contatto)
         
-        contatto = messaggio["data"]    
-
-        if contatto not in self.notifiche_da:    
-            self.notifiche_da.append(contatto)
-
-        if self.notifiche_da != []:
-            mostra_notifica(self.notifiche_da)
-
+        mostra_notifica(self.notifiche_da)
+        print()
         
 
     @schermata
