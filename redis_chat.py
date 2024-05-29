@@ -221,14 +221,14 @@ class Manager:
         if not self.messaggi_chat: 
             print('Sembra che al momento non siano presenti messaggi, manda un saluto al tuo contatto!')            
         
-        # print dei messaggi con timestamp
+        # prisnt dei messaggi con timestamp
         else:
             messaggi_formattati = []
             for messaggio in self.messaggi_chat:
-                messagio_split = messaggio.split(':') 
+                messagio_split = messaggio.split(':', maxsplit=2) 
                 data = str(datetime.fromtimestamp(float(messagio_split[0]))).split(".")[0]
                 user = 'Io' if messagio_split[1].strip() == self.active_user else messagio_split[1].strip() 
-                messaggio = f'[{data}] {user}:{":".join(messagio_split[2:])}'
+                messaggio = f'[{data}] {user}:{messagio_split[2]}'
                 messaggi_formattati.append(messaggio)
                 
             print('\n'.join(messaggi_formattati))
