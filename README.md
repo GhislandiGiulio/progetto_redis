@@ -1,4 +1,7 @@
 
+# Creazione cartella
+Crea una cartella apposita per il tuo progetto. Il nome non ha importanza.
+
 Apri una shell nella cartella in cui vuoi eseguire il progetto ed esegui i seguenti comandi:
 # Clonazione della repo di GitHub
 ``` bash
