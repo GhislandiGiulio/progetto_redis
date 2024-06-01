@@ -28,22 +28,22 @@ Comandi per scaricare e installare Python 3.12:
 
 ### Windows
 ```bash
-    python -m venv NOME_ENVIRONMENT
+    py -3.12 -m venv .venv
 ``` 
 
 ### macOS
 ``` bash
-    python3 -m venv myenv
+    python3.9 -m venv .venv
 ``` 
 
 ## 3. Attivazione virtual environment
 ### Windows Powershell
 ``` bash
-    {path_directory_venv_progetto}\Scripts\Activate.ps1
+    [PATH_DIRECTORY_PROGETTO]\.venv\Scripts\Activate.ps1
 ``` 
 ### macOS
 ``` bash
-    source {path_directory_venv_progetto}/bin/activate
+    source [PATH_DIRECTORY_PROGETTO]/.venv/bin/activate
 ``` 
 
 # Installazione delle dipendenze
