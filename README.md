@@ -40,7 +40,7 @@ Comandi per scaricare e installare Python 3.12:
 
 ### macOS
 ``` bash
-    python3.9 -m venv .venv
+    python3.12 -m venv .venv
 ``` 
 
 ## 3. Attivazione virtual environment
