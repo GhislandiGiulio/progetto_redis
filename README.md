@@ -1,6 +1,7 @@
 
 # Pre-Requisiti
 ## (per Windows) Abilita esecuzione di script su PowerShell
+Apri un terminale PowerShell con diritti di amministratore ed esegui il seguente comando:
 ``` bash
     set-executionpolicy remotesigned
 ``` 
