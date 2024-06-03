@@ -4,7 +4,13 @@ import os
 from datetime import datetime
 from database import Database, Chiavi
 import time
-import msvcrt
+
+if os.name == 'nt':
+    # Per Windows
+    import msvcrt
+else:
+    # Per Unix/Linux/macOS
+    from getch import getch
 
 def schermata(f):
     def wrapper(self, *args, **kwargs):
@@ -36,9 +42,10 @@ def schermata(f):
 class Manager:
     def __init__(
         self,
+        host: str,
         porta: str
     ):
-        self.db = Database(porta)
+        self.db = Database(host, porta)
         self.active_user = None
 
         # thread per le notifiche viene inizializzato quando viene fatto il login
@@ -50,7 +57,6 @@ class Manager:
         self.nuovo_messaggio = ''
         self.messaggi_chat = []
         self.chiavi = Chiavi()
-
 
     def gestisci_notifiche(self, messaggio=None):
         def mostra_notifica(lista_contatti):
@@ -299,8 +305,6 @@ class Manager:
             # aggiornamento lista notifiche
             self.notifiche_da = self.controlla_nuovi_messaggi()
         
-
-        
         # creazione del thread a partire dalla connessione pubsub al canale della chat
         pubsub = self.db.get_pubsub(self.active_user, azioni_ricezione, contatto, effimeri)
         pubsub_thread = pubsub.run_in_thread(sleep_time=0.1)
@@ -329,21 +333,46 @@ class Manager:
             
             ## inserimento del messaggio
             while True:
-                if msvcrt.kbhit():
-                    key = msvcrt.getch()
+                
+                ## WINDOWS
+                if os.name == 'nt':
+                    if msvcrt.kbhit():        
+                        key = msvcrt.getch()
+                    
+                        if key == b'\r':
+                            break
+                        elif key == b'\x08':
+                            if len(self.nuovo_messaggio) > 0: 
+                                self.nuovo_messaggio = self.nuovo_messaggio[:-1]
+                        elif len(key) == 1: 
+                            key = key.decode()
+                            self.nuovo_messaggio += key
+                        
+                        else: continue
+                        
+                        self.mostra_chat(contatto, effimeri)
+                    
+                ## LINUX, MAC
+                else:
+                    try:
+                        key = getch()
+                    except: 
+                        continue ## carattere non supportato
+            
                     ## se premiamo "enter" -> esci
-                    if key == b'\r':
+                    if key.encode() == b'\n':
                         break
                     
                     ## se premiamo "cancel"/"delete" rimuoviamo l'ultima lettere del messaggio
-                    elif key == b'\x08': 
-                        self.nuovo_messaggio = self.nuovo_messaggio[:-1]
+                    elif key.encode() == b'\x08' or key.encode() == b'\x7f':
+                        if len(self.nuovo_messaggio) > 0: 
+                            self.nuovo_messaggio = self.nuovo_messaggio[:-1]
                         
                     elif len(key) == 1: 
                         try:
                             key = key.decode()
-                            self.nuovo_messaggio += key
                         except: pass ## il carattere premuto non è decifrabile / non è valido
+                        self.nuovo_messaggio += key
                     
                     else: continue
                     
@@ -382,6 +411,9 @@ class Manager:
 
                 # publish per inviare notifica
                 self.db.notify_channel(contatto, message=self.active_user, effimeri=effimeri)
+                
+                ## aggiorna l'ultimo accesso
+                self.db.set_ultimo_accesso(self.active_user, contatto)
                 
     
     @schermata
@@ -458,6 +490,11 @@ class Manager:
             # verifica presenza di spazi
             if " " in password:
                 print("La password non può contenere spazi")
+                continue
+            
+            # verifica della lunghezza minima e massima della password
+            if len(password) < 8:
+                print("La password deve contenere almeno 8 caratteri")
                 continue
             
             conferma_password = pwinput.pwinput(prompt='Conferma la password: ', mask='*')
@@ -676,7 +713,7 @@ q- Torna al menù''')
 
 
 if __name__ == "__main__":
-    manager = Manager(6379)   
+    manager = Manager('127.0.0.1', 6379)   
     
     while True:
         manager.menu_iniziale()

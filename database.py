@@ -6,11 +6,12 @@ class Database:
     """Questa classe è realizzata per raggruppare le funzioni che interagiscono con il database Redis e i valori delle chiavi"""
     def __init__(
         self,
+        host: str = '127.0.0.1',
         porta: str = 6379,
     ):
 
         self.redis = redis.Redis(
-            host='127.0.0.1',
+            host=host,
             port=porta,
             decode_responses=True
         )
